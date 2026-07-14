@@ -2,10 +2,13 @@ import bcrypt from 'bcryptjs';
 import { UserRepository } from '../repositories/UserRepository.js';
 import { CustomError } from '../helpers/CustomError.js';
 import { generateToken } from '../helpers/jwt.js';
+import { MailService } from './MailService.js';
 export class AuthService {
     userRepository;
+    mailService;
     constructor() {
         this.userRepository = new UserRepository();
+        this.mailService = new MailService();
     }
     async register(name, email, password) {
         const existing = await this.userRepository.findByEmail(email);
@@ -72,6 +75,7 @@ export class AuthService {
         user.resetToken = resetToken;
         user.resetTokenExpires = new Date(Date.now() + 3600000); // 1 hour
         await user.save();
+        await this.mailService.sendPasswordResetEmail(email, resetToken, user.name);
         return resetToken;
     }
     async resetPassword(token, newPassword) {
