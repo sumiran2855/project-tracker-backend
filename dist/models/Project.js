@@ -59,6 +59,35 @@ const ProjectSchema = new Schema({
         ref: 'User',
         required: true,
     },
+    techStack: {
+        type: [String],
+        default: [],
+    },
+    priority: {
+        type: String,
+        enum: ['Low', 'Medium', 'High', 'Critical'],
+        default: 'Medium',
+    },
+    budget: {
+        type: String,
+        default: '',
+    },
+    repositoryUrl: {
+        type: String,
+        default: '',
+    },
+    slackChannel: {
+        type: String,
+        default: '',
+    },
+    startDate: {
+        type: String,
+        default: '',
+    },
+    targetQuarter: {
+        type: String,
+        default: '',
+    },
 }, {
     timestamps: true,
     toJSON: {

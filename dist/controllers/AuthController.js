@@ -84,4 +84,16 @@ export class AuthController {
             next(error);
         }
     };
+    getEmployees = async (req, res, next) => {
+        try {
+            const employees = await this.authService.getEmployees();
+            res.status(200).json({
+                success: true,
+                data: { employees },
+            });
+        }
+        catch (error) {
+            next(error);
+        }
+    };
 }

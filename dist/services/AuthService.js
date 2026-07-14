@@ -88,4 +88,24 @@ export class AuthService {
         user.resetTokenExpires = undefined;
         await user.save();
     }
+    async getEmployees() {
+        const users = await this.userRepository.find();
+        const bgColors = ['bg-indigo-500', 'bg-emerald-500', 'bg-violet-500', 'bg-rose-500', 'bg-amber-500', 'bg-sky-500', 'bg-blue-500'];
+        return users.map(u => {
+            let hash = 0;
+            const name = u.name || '';
+            for (let i = 0; i < name.length; i++) {
+                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const index = Math.abs(hash) % bgColors.length;
+            return {
+                id: u.id,
+                name: u.name,
+                email: u.email,
+                role: u.role,
+                initials: name.split(' ').map((n) => n[0]).join('').toUpperCase().substring(0, 2) || 'U',
+                bg: bgColors[index],
+            };
+        });
+    }
 }

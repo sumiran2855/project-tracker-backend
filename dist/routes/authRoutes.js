@@ -8,6 +8,7 @@ const controller = new AuthController();
 router.post('/register', validate(RegisterSchema), controller.register);
 router.post('/login', validate(LoginSchema), controller.login);
 router.get('/me', requireAuth, controller.getCurrentUser);
+router.get('/employees', requireAuth, controller.getEmployees);
 router.put('/role', requireAuth, validate(UpdateRoleSchema), controller.updateRole);
 router.post('/forgot-password', validate(ForgotPasswordSchema), controller.forgotPassword);
 router.post('/reset-password', validate(ResetPasswordSchema), controller.resetPassword);

@@ -20,6 +20,13 @@ export interface IProject extends Document {
   dueDate: string;
   members: IProjectMember[];
   ownerId: Types.ObjectId;
+  techStack?: string[];
+  priority?: 'Low' | 'Medium' | 'High' | 'Critical';
+  budget?: string;
+  repositoryUrl?: string;
+  slackChannel?: string;
+  startDate?: string;
+  targetQuarter?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -84,6 +91,35 @@ const ProjectSchema = new Schema<IProject>(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+    },
+    techStack: {
+      type: [String],
+      default: [],
+    },
+    priority: {
+      type: String,
+      enum: ['Low', 'Medium', 'High', 'Critical'],
+      default: 'Medium',
+    },
+    budget: {
+      type: String,
+      default: '',
+    },
+    repositoryUrl: {
+      type: String,
+      default: '',
+    },
+    slackChannel: {
+      type: String,
+      default: '',
+    },
+    startDate: {
+      type: String,
+      default: '',
+    },
+    targetQuarter: {
+      type: String,
+      default: '',
     },
   },
   {

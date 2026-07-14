@@ -89,4 +89,16 @@ export class AuthController {
       next(error);
     }
   };
+
+  getEmployees = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const employees = await this.authService.getEmployees();
+      res.status(200).json({
+        success: true,
+        data: { employees },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 }

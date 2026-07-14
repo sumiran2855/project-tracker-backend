@@ -16,6 +16,19 @@ export const ProjectCreateSchema = z.object({
     description: z.string().default(''),
     tags: z.array(z.string()).default([]),
     dueDate: z.string().default('No Due Date'),
+    priority: z.enum(['Low', 'Medium', 'High', 'Critical']).default('Medium'),
+    techStack: z.array(z.string()).default([]),
+    budget: z.string().default(''),
+    repositoryUrl: z.string().default(''),
+    slackChannel: z.string().default(''),
+    startDate: z.string().default(''),
+    targetQuarter: z.string().default(''),
+    members: z.array(z.object({
+        userId: z.string(),
+        name: z.string(),
+        initials: z.string().optional(),
+        bg: z.string().optional(),
+    })).default([]),
 });
 export const ProjectUpdateSchema = z.object({
     name: z.string().min(3).optional(),
@@ -24,6 +37,19 @@ export const ProjectUpdateSchema = z.object({
     progress: z.number().min(0).max(100).optional(),
     tags: z.array(z.string()).optional(),
     dueDate: z.string().optional(),
+    priority: z.enum(['Low', 'Medium', 'High', 'Critical']).optional(),
+    techStack: z.array(z.string()).optional(),
+    budget: z.string().optional(),
+    repositoryUrl: z.string().optional(),
+    slackChannel: z.string().optional(),
+    startDate: z.string().optional(),
+    targetQuarter: z.string().optional(),
+    members: z.array(z.object({
+        userId: z.string(),
+        name: z.string(),
+        initials: z.string().optional(),
+        bg: z.string().optional(),
+    })).optional(),
 });
 export const TaskCreateSchema = z.object({
     title: z.string().min(1, 'Task title is required'),

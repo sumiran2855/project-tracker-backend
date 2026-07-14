@@ -10,10 +10,9 @@ export class ProjectController {
 
   create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { name, description, tags, dueDate } = req.body;
       const user = (req as any).user;
       
-      const project = await this.projectService.createProject(name, description, tags, dueDate, {
+      const project = await this.projectService.createProject(req.body, {
         id: user.userId,
         name: user.name,
       });
