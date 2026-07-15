@@ -7,15 +7,33 @@ export interface ITaskAssignee {
   bg: string;
 }
 
+export interface ISubtask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
+export interface IComment {
+  id: string;
+  author: string;
+  initials: string;
+  text: string;
+  time: string;
+}
+
 export interface ITask extends Document {
   title: string;
   description: string;
-  status: 'Todo' | 'In Progress' | 'In Review' | 'Completed';
-  priority: 'Low' | 'Medium' | 'High';
+  status: 'To Do' | 'In Progress' | 'In Review' | 'Done';
+  priority: 'Low' | 'Medium' | 'High' | 'Urgent';
   projectId: Types.ObjectId;
   projectName: string;
+  startDate: string;
   dueDate: string;
   assignees: ITaskAssignee[];
+  subtasks: ISubtask[];
+  comments: IComment[];
+  actualHours?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,13 +52,13 @@ const TaskSchema = new Schema<ITask>(
     status: {
       type: String,
       required: true,
-      enum: ['Todo', 'In Progress', 'In Review', 'Completed'],
-      default: 'Todo',
+      enum: ['To Do', 'In Progress', 'In Review', 'Done'],
+      default: 'To Do',
     },
     priority: {
       type: String,
       required: true,
-      enum: ['Low', 'Medium', 'High'],
+      enum: ['Low', 'Medium', 'High', 'Urgent'],
       default: 'Medium',
     },
     projectId: {
@@ -51,6 +69,10 @@ const TaskSchema = new Schema<ITask>(
     projectName: {
       type: String,
       required: true,
+    },
+    startDate: {
+      type: String,
+      default: '',
     },
     dueDate: {
       type: String,
@@ -64,6 +86,26 @@ const TaskSchema = new Schema<ITask>(
         bg: { type: String, required: true },
       },
     ],
+    subtasks: [
+      {
+        id: { type: String, required: true },
+        title: { type: String, required: true },
+        completed: { type: Boolean, required: true, default: false },
+      },
+    ],
+    comments: [
+      {
+        id: { type: String, required: true },
+        author: { type: String, required: true },
+        initials: { type: String, required: true },
+        text: { type: String, required: true },
+        time: { type: String, required: true },
+      },
+    ],
+    actualHours: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,
@@ -83,3 +125,4 @@ const TaskSchema = new Schema<ITask>(
 
 export const Task = model<ITask>('Task', TaskSchema);
 export default Task;
+

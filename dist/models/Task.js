@@ -12,13 +12,13 @@ const TaskSchema = new Schema({
     status: {
         type: String,
         required: true,
-        enum: ['Todo', 'In Progress', 'In Review', 'Completed'],
-        default: 'Todo',
+        enum: ['To Do', 'In Progress', 'In Review', 'Done'],
+        default: 'To Do',
     },
     priority: {
         type: String,
         required: true,
-        enum: ['Low', 'Medium', 'High'],
+        enum: ['Low', 'Medium', 'High', 'Urgent'],
         default: 'Medium',
     },
     projectId: {
@@ -30,6 +30,10 @@ const TaskSchema = new Schema({
         type: String,
         required: true,
     },
+    startDate: {
+        type: String,
+        default: '',
+    },
     dueDate: {
         type: String,
         default: '',
@@ -40,6 +44,22 @@ const TaskSchema = new Schema({
             name: { type: String, required: true },
             initials: { type: String, required: true },
             bg: { type: String, required: true },
+        },
+    ],
+    subtasks: [
+        {
+            id: { type: String, required: true },
+            title: { type: String, required: true },
+            completed: { type: Boolean, required: true, default: false },
+        },
+    ],
+    comments: [
+        {
+            id: { type: String, required: true },
+            author: { type: String, required: true },
+            initials: { type: String, required: true },
+            text: { type: String, required: true },
+            time: { type: String, required: true },
         },
     ],
 }, {

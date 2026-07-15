@@ -19,7 +19,7 @@ export class TaskService {
         project.progress = progress;
         await project.save();
     }
-    async createTask(title, description, status, priority, projectId, dueDate, assigneeUsers) {
+    async createTask(title, description, status, priority, projectId, startDate, dueDate, assigneeUsers, subtasks = [], comments = []) {
         const project = await this.projectRepository.findById(projectId);
         if (!project) {
             throw new CustomError(404, 'Project not found');
@@ -37,10 +37,13 @@ export class TaskService {
             priority,
             projectId: new Types.ObjectId(projectId),
             projectName: project.name,
+            startDate,
             dueDate,
             assignees,
+            subtasks,
+            comments,
         });
-        const isCompleted = status === 'Completed';
+        const isCompleted = status === 'Done';
         await this.projectRepository.incrementTaskCounters(projectId, isCompleted);
         await this.recalculateProjectProgress(projectId);
         return task;
@@ -75,8 +78,8 @@ export class TaskService {
             throw new CustomError(500, 'Failed to update task');
         }
         const projectIdStr = task.projectId.toString();
-        const wasCompleted = oldStatus === 'Completed';
-        const isNowCompleted = newStatus === 'Completed';
+        const wasCompleted = oldStatus === 'Done';
+        const isNowCompleted = newStatus === 'Done';
         await this.projectRepository.updateTaskCompletionStatus(projectIdStr, wasCompleted, isNowCompleted);
         await this.recalculateProjectProgress(projectIdStr);
         return updatedTask;
@@ -87,7 +90,7 @@ export class TaskService {
             throw new CustomError(404, 'Task not found');
         }
         const projectIdStr = task.projectId.toString();
-        const isCompleted = task.status === 'Completed';
+        const isCompleted = task.status === 'Done';
         const deleted = await this.taskRepository.delete(taskId);
         await this.projectRepository.decrementTaskCounters(projectIdStr, isCompleted);
         await this.recalculateProjectProgress(projectIdStr);

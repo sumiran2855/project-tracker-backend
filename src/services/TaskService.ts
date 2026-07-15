@@ -27,11 +27,15 @@ export class TaskService {
   async createTask(
     title: string,
     description: string,
-    status: 'Todo' | 'In Progress' | 'In Review' | 'Completed',
-    priority: 'Low' | 'Medium' | 'High',
+    status: 'To Do' | 'In Progress' | 'In Review' | 'Done',
+    priority: 'Low' | 'Medium' | 'High' | 'Urgent',
     projectId: string,
+    startDate: string,
     dueDate: string,
-    assigneeUsers: { id: string; name: string }[]
+    assigneeUsers: { id: string; name: string }[],
+    subtasks: { id: string; title: string; completed: boolean }[] = [],
+    comments: { id: string; author: string; initials: string; text: string; time: string }[] = [],
+    actualHours?: number
   ): Promise<any> {
     const project = await this.projectRepository.findById(projectId);
     if (!project) {
@@ -52,11 +56,15 @@ export class TaskService {
       priority,
       projectId: new Types.ObjectId(projectId),
       projectName: project.name,
+      startDate,
       dueDate,
       assignees,
+      subtasks,
+      comments,
+      actualHours,
     });
 
-    const isCompleted = status === 'Completed';
+    const isCompleted = status === 'Done';
     await this.projectRepository.incrementTaskCounters(projectId, isCompleted);
     await this.recalculateProjectProgress(projectId);
 
@@ -99,8 +107,8 @@ export class TaskService {
     }
 
     const projectIdStr = task.projectId.toString();
-    const wasCompleted = oldStatus === 'Completed';
-    const isNowCompleted = newStatus === 'Completed';
+    const wasCompleted = oldStatus === 'Done';
+    const isNowCompleted = newStatus === 'Done';
 
     await this.projectRepository.updateTaskCompletionStatus(projectIdStr, wasCompleted, isNowCompleted);
     await this.recalculateProjectProgress(projectIdStr);
@@ -115,7 +123,7 @@ export class TaskService {
     }
 
     const projectIdStr = task.projectId.toString();
-    const isCompleted = task.status === 'Completed';
+    const isCompleted = task.status === 'Done';
 
     const deleted = await this.taskRepository.delete(taskId);
     await this.projectRepository.decrementTaskCounters(projectIdStr, isCompleted);

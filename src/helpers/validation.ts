@@ -60,21 +60,36 @@ export const ProjectUpdateSchema = z.object({
 export const TaskCreateSchema = z.object({
   title: z.string().min(1, 'Task title is required'),
   description: z.string().default(''),
-  status: z.enum(['Todo', 'In Progress', 'In Review', 'Completed']).default('Todo'),
-  priority: z.enum(['Low', 'Medium', 'High']).default('Medium'),
+  status: z.enum(['To Do', 'In Progress', 'In Review', 'Done']).default('To Do'),
+  priority: z.enum(['Low', 'Medium', 'High', 'Urgent']).default('Medium'),
   projectId: z.string().min(1, 'Project ID is required'),
+  startDate: z.string().default(''),
   dueDate: z.string().default(''),
   assignees: z.array(z.object({
     id: z.string(),
     name: z.string(),
   })).default([]),
+  subtasks: z.array(z.object({
+    id: z.string(),
+    title: z.string(),
+    completed: z.boolean().default(false),
+  })).default([]),
+  comments: z.array(z.object({
+    id: z.string(),
+    author: z.string(),
+    initials: z.string(),
+    text: z.string(),
+    time: z.string(),
+  })).default([]),
+  actualHours: z.number().nonnegative().optional(),
 });
 
 export const TaskUpdateSchema = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
-  status: z.enum(['Todo', 'In Progress', 'In Review', 'Completed']).optional(),
-  priority: z.enum(['Low', 'Medium', 'High']).optional(),
+  status: z.enum(['To Do', 'In Progress', 'In Review', 'Done']).optional(),
+  priority: z.enum(['Low', 'Medium', 'High', 'Urgent']).optional(),
+  startDate: z.string().optional(),
   dueDate: z.string().optional(),
   assignees: z.array(z.object({
     userId: z.string(),
@@ -82,6 +97,19 @@ export const TaskUpdateSchema = z.object({
     initials: z.string().optional(),
     bg: z.string().optional(),
   })).optional(),
+  subtasks: z.array(z.object({
+    id: z.string(),
+    title: z.string(),
+    completed: z.boolean(),
+  })).optional(),
+  comments: z.array(z.object({
+    id: z.string(),
+    author: z.string(),
+    initials: z.string(),
+    text: z.string(),
+    time: z.string(),
+  })).optional(),
+  actualHours: z.number().nonnegative().optional(),
 });
 
 export const IssueCreateSchema = z.object({
