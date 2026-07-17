@@ -20,24 +20,36 @@ export class MailService {
 
   private async send(options: { to: string; subject: string; text: string; html: string }): Promise<void> {
     if (env.RESEND_API_KEY) {
+      // Use onboarding@resend.dev as sender if domain is not verified on Resend,
+      // otherwise use the configured SMTP_FROM address.
+      const from = env.RESEND_SENDER_VERIFIED === 'true'
+        ? env.SMTP_FROM
+        : `Project Work Tracker <onboarding@resend.dev>`;
+
+      const payload = {
+        from,
+        to: options.to,
+        subject: options.subject,
+        text: options.text,
+        html: options.html,
+      };
+
+      console.log(`[Resend] Sending email to ${options.to} | from: ${from} | subject: "${options.subject}"`);
+
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${env.RESEND_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          from: env.SMTP_FROM,
-          to: options.to,
-          subject: options.subject,
-          text: options.text,
-          html: options.html,
-        }),
+        body: JSON.stringify(payload),
       });
 
+      const responseBody = await response.text();
+      console.log(`[Resend] Response status: ${response.status} | body: ${responseBody}`);
+
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to send email via Resend API: ${response.statusText} (${response.status}) - ${errorText}`);
+        throw new Error(`Failed to send email via Resend API: ${response.statusText} (${response.status}) - ${responseBody}`);
       }
     } else {
       if (!this.transporter) {
