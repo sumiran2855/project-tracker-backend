@@ -2,18 +2,55 @@ import nodemailer from 'nodemailer';
 import { env } from '../config/env.js';
 
 export class MailService {
-  private transporter: nodemailer.Transporter;
+  private transporter?: nodemailer.Transporter;
 
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      secure: env.SMTP_PORT === 465, // true for 465, false for other ports like 587
-      auth: {
-        user: env.SMTP_USER,
-        pass: env.SMTP_PASS,
-      },
-    });
+    if (!env.RESEND_API_KEY) {
+      this.transporter = nodemailer.createTransport({
+        host: env.SMTP_HOST,
+        port: env.SMTP_PORT,
+        secure: env.SMTP_PORT === 465, // true for 465, false for other ports like 587
+        auth: {
+          user: env.SMTP_USER,
+          pass: env.SMTP_PASS,
+        },
+      });
+    }
+  }
+
+  private async send(options: { to: string; subject: string; text: string; html: string }): Promise<void> {
+    if (env.RESEND_API_KEY) {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: env.SMTP_FROM,
+          to: options.to,
+          subject: options.subject,
+          text: options.text,
+          html: options.html,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to send email via Resend API: ${response.statusText} (${response.status}) - ${errorText}`);
+      }
+    } else {
+      if (!this.transporter) {
+        throw new Error('Mail transporter not initialized and RESEND_API_KEY is missing');
+      }
+      await this.transporter.sendMail({
+        from: `"${env.SMTP_FROM.split('@')[0]}" <${env.SMTP_FROM}>`,
+        to: options.to,
+        subject: options.subject,
+        text: options.text,
+        html: options.html,
+      });
+    }
   }
 
   /**
@@ -159,8 +196,7 @@ Best regards,
 Project Work Tracker Team
     `;
 
-    await this.transporter.sendMail({
-      from: `"${env.SMTP_FROM.split('@')[0]}" <${env.SMTP_FROM}>`,
+    await this.send({
       to,
       subject: 'Reset Your Password - Project Work Tracker',
       text: textContent,
@@ -297,8 +333,7 @@ Best regards,
 Project Work Tracker Team
     `;
 
-    await this.transporter.sendMail({
-      from: `"${env.SMTP_FROM.split('@')[0]}" <${env.SMTP_FROM}>`,
+    await this.send({
       to,
       subject: `Collaboration Invitation from ${inviterName}`,
       text: textContent,
