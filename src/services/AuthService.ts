@@ -222,7 +222,7 @@ export class AuthService {
     inviter.markModified('collaborators');
     await inviter.save();
 
-    const acceptUrl = `http://localhost:5000/api/auth/collab/accept?inviterId=${inviter.id}&inviteeId=${inviteeUser.id}`;
+    const acceptUrl = `https://project-tracker-backend-d85g.onrender.com/api/auth/collab/accept?inviterId=${inviter.id}&inviteeId=${inviteeUser.id}`;
     
     // Log the accept URL for testing in local environment
     console.log(`[COLLABORATION ACCEPT URL]: ${acceptUrl}`);
