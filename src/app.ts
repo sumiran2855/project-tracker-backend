@@ -1,5 +1,27 @@
 import dns from 'dns';
+
+// Force standard Node.js lookup to prefer IPv4
 dns.setDefaultResultOrder('ipv4first');
+
+// Monkeypatch IPv6 DNS resolvers to force fallback to IPv4
+const mockResolve6 = (hostname: string, ...args: any[]) => {
+  const callback = args[args.length - 1];
+  if (typeof callback === 'function') {
+    callback(null, []);
+  }
+};
+
+(dns as any).resolve6 = mockResolve6;
+if (dns.Resolver && dns.Resolver.prototype) {
+  (dns.Resolver.prototype as any).resolve6 = mockResolve6;
+}
+
+if (dns.promises) {
+  (dns.promises as any).resolve6 = async () => [];
+  if (dns.promises.Resolver && dns.promises.Resolver.prototype) {
+    (dns.promises.Resolver.prototype as any).resolve6 = async () => [];
+  }
+}
 
 import express from 'express';
 import cors from 'cors';
