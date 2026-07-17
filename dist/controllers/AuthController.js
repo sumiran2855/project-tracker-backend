@@ -57,6 +57,20 @@ export class AuthController {
             next(error);
         }
     };
+    updateNotificationState = async (req, res, next) => {
+        try {
+            const userId = req.user.userId;
+            const { readNotifications, deletedNotifications } = req.body;
+            const user = await this.authService.updateNotificationState(userId, readNotifications, deletedNotifications);
+            res.status(200).json({
+                success: true,
+                data: { user },
+            });
+        }
+        catch (error) {
+            next(error);
+        }
+    };
     forgotPassword = async (req, res, next) => {
         try {
             const { email } = req.body;
@@ -90,6 +104,60 @@ export class AuthController {
             res.status(200).json({
                 success: true,
                 data: { employees },
+            });
+        }
+        catch (error) {
+            next(error);
+        }
+    };
+    updateProfile = async (req, res, next) => {
+        try {
+            const userId = req.user.userId;
+            const { name, email, role, location, department, skills, collaborators } = req.body;
+            const user = await this.authService.updateProfile(userId, { name, email, role, location, department, skills, collaborators });
+            res.status(200).json({
+                success: true,
+                data: { user },
+            });
+        }
+        catch (error) {
+            next(error);
+        }
+    };
+    inviteCollaborator = async (req, res, next) => {
+        try {
+            const userId = req.user.userId;
+            const { email, name, role, bg, initials } = req.body;
+            const user = await this.authService.inviteCollaborator(userId, { email, name, role, bg, initials });
+            res.status(200).json({
+                success: true,
+                data: { user },
+            });
+        }
+        catch (error) {
+            next(error);
+        }
+    };
+    acceptCollaboration = async (req, res, next) => {
+        try {
+            const { inviterId, inviteeId } = req.query;
+            await this.authService.acceptCollaboration(inviterId, inviteeId);
+            // Redirect to the frontend page
+            const nextPublicUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+            res.redirect(`${nextPublicUrl}/profile?collabAccepted=true`);
+        }
+        catch (error) {
+            next(error);
+        }
+    };
+    removeCollaborator = async (req, res, next) => {
+        try {
+            const userId = req.user.userId;
+            const email = (req.body.email || req.query.email);
+            const user = await this.authService.removeCollaborator(userId, email);
+            res.status(200).json({
+                success: true,
+                data: { user },
             });
         }
         catch (error) {

@@ -1,5 +1,14 @@
 import { Schema, model, Document } from 'mongoose';
 
+export interface ICollaborator {
+  name: string;
+  initials: string;
+  bg: string;
+  role: string;
+  email: string;
+  status: 'Pending' | 'Accepted';
+}
+
 export interface IUser extends Document {
   email: string;
   passwordHash: string;
@@ -7,6 +16,13 @@ export interface IUser extends Document {
   role: string;
   resetToken?: string;
   resetTokenExpires?: Date;
+  readNotifications?: string[];
+  deletedNotifications?: string[];
+  skills?: string[];
+  location?: string;
+  department?: string;
+  lastLogin?: Date;
+  collaborators?: ICollaborator[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,6 +58,43 @@ const UserSchema = new Schema<IUser>(
     },
     resetTokenExpires: {
       type: Date,
+    },
+    readNotifications: {
+      type: [String],
+      default: [],
+    },
+    deletedNotifications: {
+      type: [String],
+      default: [],
+    },
+    skills: {
+      type: [String],
+      default: [],
+    },
+    location: {
+      type: String,
+      default: '',
+    },
+    department: {
+      type: String,
+      default: '',
+    },
+    lastLogin: {
+      type: Date,
+      default: null,
+    },
+    collaborators: {
+      type: [
+        {
+          name: { type: String, required: true },
+          initials: { type: String, required: true },
+          bg: { type: String, required: true },
+          role: { type: String, required: true },
+          email: { type: String, required: true },
+          status: { type: String, required: true, enum: ['Pending', 'Accepted'], default: 'Pending' },
+        },
+      ],
+      default: [],
     },
   },
   {

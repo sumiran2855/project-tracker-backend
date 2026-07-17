@@ -18,6 +18,7 @@ export interface IIssue extends Document {
   dueDate: string;
   assignees: IIssueAssignee[];
   commentsCount: number;
+  actualHours?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -73,6 +74,10 @@ const IssueSchema = new Schema<IIssue>(
       },
     ],
     commentsCount: {
+      type: Number,
+      default: 0,
+    },
+    actualHours: {
       type: Number,
       default: 0,
     },

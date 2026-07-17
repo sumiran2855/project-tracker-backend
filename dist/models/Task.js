@@ -62,6 +62,10 @@ const TaskSchema = new Schema({
             time: { type: String, required: true },
         },
     ],
+    actualHours: {
+        type: Number,
+        default: 0,
+    },
 }, {
     timestamps: true,
     toJSON: {

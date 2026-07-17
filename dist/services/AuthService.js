@@ -48,6 +48,8 @@ export class AuthService {
             name: user.name,
             role: user.role,
         });
+        user.lastLogin = new Date();
+        await user.save();
         return { user, token };
     }
     async updateRole(userId, newRole) {
@@ -56,6 +58,20 @@ export class AuthService {
             throw new CustomError(404, 'User not found');
         }
         user.role = newRole;
+        await user.save();
+        return user;
+    }
+    async updateNotificationState(userId, readNotifications, deletedNotifications) {
+        const user = await this.userRepository.findById(userId);
+        if (!user) {
+            throw new CustomError(404, 'User not found');
+        }
+        if (readNotifications !== undefined) {
+            user.readNotifications = readNotifications;
+        }
+        if (deletedNotifications !== undefined) {
+            user.deletedNotifications = deletedNotifications;
+        }
         await user.save();
         return user;
     }
@@ -107,5 +123,129 @@ export class AuthService {
                 bg: bgColors[index],
             };
         });
+    }
+    async updateProfile(userId, updateData) {
+        const user = await this.userRepository.findById(userId);
+        if (!user) {
+            throw new CustomError(404, 'User not found');
+        }
+        if (updateData.name !== undefined)
+            user.name = updateData.name;
+        if (updateData.email !== undefined)
+            user.email = updateData.email;
+        if (updateData.role !== undefined)
+            user.role = updateData.role;
+        if (updateData.location !== undefined)
+            user.location = updateData.location;
+        if (updateData.department !== undefined)
+            user.department = updateData.department;
+        if (updateData.skills !== undefined)
+            user.skills = updateData.skills;
+        if (updateData.collaborators !== undefined)
+            user.collaborators = updateData.collaborators;
+        await user.save();
+        return user;
+    }
+    async inviteCollaborator(userId, inviteeData) {
+        const inviter = await this.userRepository.findById(userId);
+        if (!inviter) {
+            throw new CustomError(404, 'Inviter not found');
+        }
+        const inviteeUser = await this.userRepository.findByEmail(inviteeData.email);
+        if (!inviteeUser) {
+            throw new CustomError(404, 'User with this email is not registered');
+        }
+        // Initialize list
+        if (!inviter.collaborators) {
+            inviter.collaborators = [];
+        }
+        // Check if already exists in collaborators list
+        const existing = inviter.collaborators.find(c => c.email.toLowerCase() === inviteeData.email.toLowerCase());
+        if (existing) {
+            if (existing.status === 'Accepted') {
+                throw new CustomError(400, 'Already collaborating with this user');
+            }
+            else {
+                throw new CustomError(400, 'Collaboration invitation already pending');
+            }
+        }
+        // Add as pending collaborator
+        inviter.collaborators.push({
+            name: inviteeData.name,
+            email: inviteeData.email.toLowerCase(),
+            role: inviteeData.role,
+            bg: inviteeData.bg,
+            initials: inviteeData.initials,
+            status: 'Pending'
+        });
+        inviter.markModified('collaborators');
+        await inviter.save();
+        const acceptUrl = `http://localhost:5000/api/auth/collab/accept?inviterId=${inviter.id}&inviteeId=${inviteeUser.id}`;
+        // Log the accept URL for testing in local environment
+        console.log(`[COLLABORATION ACCEPT URL]: ${acceptUrl}`);
+        await this.mailService.sendCollaborationInvitationEmail(inviteeData.email, inviter.name, inviter.email, acceptUrl);
+        return inviter;
+    }
+    async acceptCollaboration(inviterId, inviteeId) {
+        const inviter = await this.userRepository.findById(inviterId);
+        const invitee = await this.userRepository.findById(inviteeId);
+        if (!inviter || !invitee) {
+            throw new CustomError(404, 'User not found');
+        }
+        // 1. Update invitee in inviter's collaborators list
+        if (inviter.collaborators) {
+            const inviterCollab = inviter.collaborators.find(c => c.email.toLowerCase() === invitee.email.toLowerCase());
+            if (inviterCollab) {
+                inviterCollab.status = 'Accepted';
+                inviter.markModified('collaborators');
+                await inviter.save();
+            }
+        }
+        // 2. Also add inviter to invitee's collaborators list if not already present, and set to Accepted
+        if (!invitee.collaborators) {
+            invitee.collaborators = [];
+        }
+        const inviteeCollab = invitee.collaborators.find(c => c.email.toLowerCase() === inviter.email.toLowerCase());
+        if (inviteeCollab) {
+            inviteeCollab.status = 'Accepted';
+        }
+        else {
+            let hash = 0;
+            const name = inviter.name || '';
+            for (let i = 0; i < name.length; i++) {
+                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const bgColors = ['bg-indigo-500', 'bg-emerald-500', 'bg-violet-500', 'bg-rose-500', 'bg-amber-500', 'bg-sky-500', 'bg-blue-500'];
+            const index = Math.abs(hash) % bgColors.length;
+            invitee.collaborators.push({
+                name: inviter.name,
+                email: inviter.email,
+                role: inviter.role,
+                bg: bgColors[index],
+                initials: inviter.name.split(' ').map((n) => n[0]).join('').toUpperCase().substring(0, 2) || 'U',
+                status: 'Accepted'
+            });
+        }
+        invitee.markModified('collaborators');
+        await invitee.save();
+    }
+    async removeCollaborator(userId, colleagueEmail) {
+        const user = await this.userRepository.findById(userId);
+        if (!user) {
+            throw new CustomError(404, 'User not found');
+        }
+        if (user.collaborators) {
+            user.collaborators = user.collaborators.filter(c => c.email.toLowerCase() !== colleagueEmail.toLowerCase());
+            user.markModified('collaborators');
+            await user.save();
+        }
+        // Also remove from the colleague's collaborators list if they were collaborating
+        const colleague = await this.userRepository.findByEmail(colleagueEmail);
+        if (colleague && colleague.collaborators) {
+            colleague.collaborators = colleague.collaborators.filter(c => c.email.toLowerCase() !== user.email.toLowerCase());
+            colleague.markModified('collaborators');
+            await colleague.save();
+        }
+        return user;
     }
 }

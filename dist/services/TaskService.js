@@ -19,7 +19,7 @@ export class TaskService {
         project.progress = progress;
         await project.save();
     }
-    async createTask(title, description, status, priority, projectId, startDate, dueDate, assigneeUsers, subtasks = [], comments = []) {
+    async createTask(title, description, status, priority, projectId, startDate, dueDate, assigneeUsers, subtasks = [], comments = [], actualHours) {
         const project = await this.projectRepository.findById(projectId);
         if (!project) {
             throw new CustomError(404, 'Project not found');
@@ -42,6 +42,7 @@ export class TaskService {
             assignees,
             subtasks,
             comments,
+            actualHours,
         });
         const isCompleted = status === 'Done';
         await this.projectRepository.incrementTaskCounters(projectId, isCompleted);

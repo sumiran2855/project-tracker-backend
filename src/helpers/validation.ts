@@ -124,6 +124,7 @@ export const IssueCreateSchema = z.object({
     id: z.string(),
     name: z.string(),
   })).default([]),
+  actualHours: z.number().nonnegative().optional(),
 });
 
 export const IssueUpdateSchema = z.object({
@@ -139,6 +140,7 @@ export const IssueUpdateSchema = z.object({
     initials: z.string().optional(),
     bg: z.string().optional(),
   })).optional(),
+  actualHours: z.number().nonnegative().optional(),
 });
 
 export const ForgotPasswordSchema = z.object({

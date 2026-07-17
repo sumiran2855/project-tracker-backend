@@ -52,6 +52,10 @@ const IssueSchema = new Schema({
         type: Number,
         default: 0,
     },
+    actualHours: {
+        type: Number,
+        default: 0,
+    },
 }, {
     timestamps: true,
     toJSON: {

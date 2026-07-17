@@ -30,6 +30,43 @@ const UserSchema = new Schema({
     resetTokenExpires: {
         type: Date,
     },
+    readNotifications: {
+        type: [String],
+        default: [],
+    },
+    deletedNotifications: {
+        type: [String],
+        default: [],
+    },
+    skills: {
+        type: [String],
+        default: [],
+    },
+    location: {
+        type: String,
+        default: '',
+    },
+    department: {
+        type: String,
+        default: '',
+    },
+    lastLogin: {
+        type: Date,
+        default: null,
+    },
+    collaborators: {
+        type: [
+            {
+                name: { type: String, required: true },
+                initials: { type: String, required: true },
+                bg: { type: String, required: true },
+                role: { type: String, required: true },
+                email: { type: String, required: true },
+                status: { type: String, required: true, enum: ['Pending', 'Accepted'], default: 'Pending' },
+            },
+        ],
+        default: [],
+    },
 }, {
     timestamps: true,
     toJSON: {
