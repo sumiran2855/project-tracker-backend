@@ -42,6 +42,7 @@ export class MailService {
             max-width: 600px;
             margin: 40px auto;
             padding: 32px;
+            background-color: #111827; /* Fallback for older email clients */
             background: linear-gradient(135deg, #111827 0%, #0f172a 100%);
             border-radius: 16px;
             border: 1px solid rgba(255, 255, 255, 0.05);
@@ -81,6 +82,7 @@ export class MailService {
           .btn {
             display: inline-block;
             padding: 14px 30px;
+            background-color: #3b82f6; /* Fallback for older email clients */
             background: linear-gradient(135deg, #3b82f6 0%, #4f46e5 100%);
             color: #ffffff !important;
             text-decoration: none;
@@ -192,6 +194,7 @@ Project Work Tracker Team
             max-width: 600px;
             margin: 40px auto;
             padding: 32px;
+            background-color: #111827; /* Fallback for older email clients */
             background: linear-gradient(135deg, #111827 0%, #0f172a 100%);
             border-radius: 16px;
             border: 1px solid rgba(255, 255, 255, 0.05);
@@ -231,6 +234,7 @@ Project Work Tracker Team
           .btn {
             display: inline-block;
             padding: 14px 30px;
+            background-color: #3b82f6; /* Fallback for older email clients */
             background: linear-gradient(135deg, #3b82f6 0%, #4f46e5 100%);
             color: #ffffff !important;
             text-decoration: none;
