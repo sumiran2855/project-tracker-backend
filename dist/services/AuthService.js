@@ -75,6 +75,28 @@ export class AuthService {
         await user.save();
         return user;
     }
+    async updatePreferences(userId, data) {
+        const user = await this.userRepository.findById(userId);
+        if (!user) {
+            throw new CustomError(404, 'User not found');
+        }
+        if (data.workspacePrefs !== undefined) {
+            user.workspacePrefs = {
+                ...user.workspacePrefs,
+                ...data.workspacePrefs,
+            };
+            user.markModified('workspacePrefs');
+        }
+        if (data.notificationPrefs !== undefined) {
+            user.notificationPrefs = {
+                ...user.notificationPrefs,
+                ...data.notificationPrefs,
+            };
+            user.markModified('notificationPrefs');
+        }
+        await user.save();
+        return user;
+    }
     async findUserById(userId) {
         const user = await this.userRepository.findById(userId);
         if (!user) {

@@ -81,6 +81,51 @@ export class IssueService {
       }));
     }
 
+    // Auto-record timestamped workLog if actualHours is updated or workLogs provided
+    if (updateData.newWorkLog) {
+      const currentLogs = [...(issue.workLogs || [])];
+      const newHrs = Number(updateData.newWorkLog.hours) || 0;
+      currentLogs.push({
+        hours: newHrs,
+        date: updateData.newWorkLog.date ? new Date(updateData.newWorkLog.date) : new Date(),
+        userName: updateData.newWorkLog.userName || '',
+      });
+      updateData.workLogs = currentLogs;
+      updateData.actualHours = currentLogs.reduce((acc: number, l: any) => acc + (l.hours || 0), 0);
+      delete updateData.newWorkLog;
+    } else if (typeof updateData.actualHours === 'number' && !updateData.workLogs) {
+      const newHours = Math.max(0, updateData.actualHours);
+      const currentLogs = (issue.workLogs || []).map((l: any) => ({ ...l }));
+      const currentLogsSum = currentLogs.reduce((acc: number, l: any) => acc + (l.hours || 0), 0);
+
+      if (newHours === 0) {
+        updateData.workLogs = [];
+      } else if (newHours > currentLogsSum) {
+        const diff = newHours - currentLogsSum;
+        currentLogs.push({
+          hours: diff,
+          date: new Date(),
+        });
+        updateData.workLogs = currentLogs;
+      } else if (newHours < currentLogsSum) {
+        let toRemove = currentLogsSum - newHours;
+        for (let i = currentLogs.length - 1; i >= 0; i--) {
+          if (toRemove <= 0) break;
+          if (currentLogs[i].hours <= toRemove) {
+            toRemove -= currentLogs[i].hours;
+            currentLogs.splice(i, 1);
+          } else {
+            currentLogs[i].hours -= toRemove;
+            toRemove = 0;
+          }
+        }
+        if (newHours > 0 && currentLogs.length === 0) {
+          currentLogs.push({ hours: newHours, date: new Date() });
+        }
+        updateData.workLogs = currentLogs;
+      }
+    }
+
     return this.issueRepository.update(issueId, updateData);
   }
 

@@ -6,6 +6,7 @@ import { requireAuth } from '../middleware/auth.js';
 const router = Router();
 const controller = new TaskController();
 router.use(requireAuth);
+router.get('/', controller.getAll);
 router.post('/', validate(TaskCreateSchema), controller.create);
 router.get('/project/:projectId', controller.getByProject);
 router.get('/:id', controller.getById);

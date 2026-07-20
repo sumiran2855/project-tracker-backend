@@ -56,6 +56,14 @@ const IssueSchema = new Schema({
         type: Number,
         default: 0,
     },
+    workLogs: [
+        {
+            userId: { type: Schema.Types.ObjectId, ref: 'User' },
+            userName: { type: String, default: '' },
+            hours: { type: Number, required: true },
+            date: { type: Date, default: Date.now },
+        },
+    ],
 }, {
     timestamps: true,
     toJSON: {

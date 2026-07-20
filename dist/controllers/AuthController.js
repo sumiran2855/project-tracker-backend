@@ -71,11 +71,25 @@ export class AuthController {
             next(error);
         }
     };
+    updatePreferences = async (req, res, next) => {
+        try {
+            const userId = req.user.userId;
+            const { workspacePrefs, notificationPrefs } = req.body;
+            const user = await this.authService.updatePreferences(userId, { workspacePrefs, notificationPrefs });
+            res.status(200).json({
+                success: true,
+                data: { user },
+            });
+        }
+        catch (error) {
+            next(error);
+        }
+    };
     forgotPassword = async (req, res, next) => {
         try {
             const { email } = req.body;
             const token = await this.authService.forgotPassword(email);
-            console.log(`[PASSWORD RESET LINK]: http://localhost:3000/reset-password?token=${token}`);
+            console.log(`[PASSWORD RESET LINK]: https://project-work-tracker.vercel.app/reset-password?token=${token}`);
             res.status(200).json({
                 success: true,
                 message: 'Password reset link has been generated',

@@ -67,6 +67,38 @@ const UserSchema = new Schema({
         ],
         default: [],
     },
+    notificationPrefs: {
+        type: {
+            emailTasks: { type: Boolean, default: true },
+            emailDueDates: { type: Boolean, default: true },
+            emailDigests: { type: Boolean, default: false },
+            pushMentions: { type: Boolean, default: true },
+            pushStatusChanges: { type: Boolean, default: false },
+            soundAlerts: { type: Boolean, default: true },
+        },
+        default: () => ({
+            emailTasks: true,
+            emailDueDates: true,
+            emailDigests: false,
+            pushMentions: true,
+            pushStatusChanges: false,
+            soundAlerts: true,
+        }),
+    },
+    workspacePrefs: {
+        type: {
+            defaultView: { type: String, default: 'Dashboard' },
+            theme: { type: String, default: 'light' },
+            weekStart: { type: String, default: 'Monday' },
+            accentTint: { type: String, default: '#6366f1' },
+        },
+        default: () => ({
+            defaultView: 'Dashboard',
+            theme: 'light',
+            weekStart: 'Monday',
+            accentTint: '#6366f1',
+        }),
+    },
 }, {
     timestamps: true,
     toJSON: {

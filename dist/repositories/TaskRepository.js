@@ -7,6 +7,9 @@ export class TaskRepository extends BaseRepository {
     async findByProject(projectId) {
         return this.find({ projectId });
     }
+    async findAll() {
+        return this.find({});
+    }
     async findByAssignee(userId) {
         return this.find({
             'assignees.userId': userId,

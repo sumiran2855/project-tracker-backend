@@ -30,6 +30,18 @@ export class IssueController {
             next(error);
         }
     };
+    getAll = async (req, res, next) => {
+        try {
+            const issues = await this.issueService.getAllIssues();
+            res.status(200).json({
+                success: true,
+                data: { issues },
+            });
+        }
+        catch (error) {
+            next(error);
+        }
+    };
     getById = async (req, res, next) => {
         try {
             const { id } = req.params;

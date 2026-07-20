@@ -30,6 +30,18 @@ export class TaskController {
             next(error);
         }
     };
+    getAll = async (req, res, next) => {
+        try {
+            const tasks = await this.taskService.getAllTasks();
+            res.status(200).json({
+                success: true,
+                data: { tasks },
+            });
+        }
+        catch (error) {
+            next(error);
+        }
+    };
     getById = async (req, res, next) => {
         try {
             const { id } = req.params;

@@ -21,6 +21,14 @@ export interface IComment {
   time: string;
 }
 
+export interface IWorkLog {
+  id?: string;
+  userId?: Types.ObjectId;
+  userName?: string;
+  hours: number;
+  date: Date;
+}
+
 export interface ITask extends Document {
   title: string;
   description: string;
@@ -34,6 +42,7 @@ export interface ITask extends Document {
   subtasks: ISubtask[];
   comments: IComment[];
   actualHours?: number;
+  workLogs?: IWorkLog[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -106,6 +115,14 @@ const TaskSchema = new Schema<ITask>(
       type: Number,
       default: 0,
     },
+    workLogs: [
+      {
+        userId: { type: Schema.Types.ObjectId, ref: 'User' },
+        userName: { type: String, default: '' },
+        hours: { type: Number, required: true },
+        date: { type: Date, default: Date.now },
+      },
+    ],
   },
   {
     timestamps: true,
