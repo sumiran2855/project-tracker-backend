@@ -75,6 +75,10 @@ export class TaskService {
     return this.taskRepository.findByProject(projectId);
   }
 
+  async getAllTasks(): Promise<any[]> {
+    return this.taskRepository.findAll();
+  }
+
   async getTaskById(taskId: string): Promise<any> {
     const task = await this.taskRepository.findById(taskId);
     if (!task) {

@@ -54,6 +54,10 @@ export class IssueService {
     return this.issueRepository.findByProject(projectId);
   }
 
+  async getAllIssues(): Promise<any[]> {
+    return this.issueRepository.findAll();
+  }
+
   async getIssueById(issueId: string): Promise<any> {
     const issue = await this.issueRepository.findById(issueId);
     if (!issue) {

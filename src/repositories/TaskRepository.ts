@@ -10,6 +10,10 @@ export class TaskRepository extends BaseRepository<ITask> {
     return this.find({ projectId });
   }
 
+  async findAll(): Promise<ITask[]> {
+    return this.find({});
+  }
+
   async findByAssignee(userId: string): Promise<ITask[]> {
     return this.find({
       'assignees.userId': userId,

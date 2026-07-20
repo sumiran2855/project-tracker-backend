@@ -75,6 +75,20 @@ export class AuthController {
     }
   };
 
+  updatePreferences = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = (req as any).user.userId;
+      const { workspacePrefs, notificationPrefs } = req.body;
+      const user = await this.authService.updatePreferences(userId, { workspacePrefs, notificationPrefs });
+      res.status(200).json({
+        success: true,
+        data: { user },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   forgotPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { email } = req.body;

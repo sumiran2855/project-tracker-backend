@@ -94,6 +94,35 @@ export class AuthService {
     return user;
   }
 
+  async updatePreferences(
+    userId: string,
+    data: { workspacePrefs?: any; notificationPrefs?: any }
+  ): Promise<any> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new CustomError(404, 'User not found');
+    }
+
+    if (data.workspacePrefs !== undefined) {
+      user.workspacePrefs = {
+        ...user.workspacePrefs,
+        ...data.workspacePrefs,
+      };
+      user.markModified('workspacePrefs');
+    }
+
+    if (data.notificationPrefs !== undefined) {
+      user.notificationPrefs = {
+        ...user.notificationPrefs,
+        ...data.notificationPrefs,
+      };
+      user.markModified('notificationPrefs');
+    }
+
+    await user.save();
+    return user;
+  }
+
   async findUserById(userId: string): Promise<any> {
     const user = await this.userRepository.findById(userId);
     if (!user) {

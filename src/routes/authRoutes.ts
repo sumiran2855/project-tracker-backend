@@ -17,6 +17,7 @@ router.post('/collab/invite', requireAuth, controller.inviteCollaborator);
 router.get('/collab/accept', controller.acceptCollaboration);
 router.delete('/collab/remove', requireAuth, controller.removeCollaborator);
 router.put('/notifications/state', requireAuth, controller.updateNotificationState);
+router.put('/preferences', requireAuth, controller.updatePreferences);
 router.post('/forgot-password', validate(ForgotPasswordSchema), controller.forgotPassword);
 router.post('/reset-password', validate(ResetPasswordSchema), controller.resetPassword);
 

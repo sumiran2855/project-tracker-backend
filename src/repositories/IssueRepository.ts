@@ -10,6 +10,10 @@ export class IssueRepository extends BaseRepository<IIssue> {
     return this.find({ projectId });
   }
 
+  async findAll(): Promise<IIssue[]> {
+    return this.find({});
+  }
+
   async findByAssignee(userId: string): Promise<IIssue[]> {
     return this.find({
       'assignees.userId': userId,

@@ -45,6 +45,19 @@ export class IssueController {
     }
   };
 
+  getAll = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const issues = await this.issueService.getAllIssues();
+
+      res.status(200).json({
+        success: true,
+        data: { issues },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   getById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;

@@ -9,6 +9,7 @@ const controller = new IssueController();
 
 router.use(requireAuth);
 
+router.get('/', controller.getAll);
 router.post('/', validate(IssueCreateSchema), controller.create);
 router.get('/project/:projectId', controller.getByProject);
 router.get('/:id', controller.getById);
