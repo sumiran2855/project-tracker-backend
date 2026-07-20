@@ -94,7 +94,7 @@ export class AuthController {
       const { email } = req.body;
       const token = await this.authService.forgotPassword(email);
       
-      console.log(`[PASSWORD RESET LINK]: http://localhost:3000/reset-password?token=${token}`);
+      console.log(`[PASSWORD RESET LINK]: https://project-work-tracker.vercel.app/reset-password?token=${token}`);
 
       res.status(200).json({
         success: true,
