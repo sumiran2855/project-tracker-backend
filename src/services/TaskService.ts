@@ -42,12 +42,16 @@ export class TaskService {
       throw new CustomError(404, 'Project not found');
     }
 
-    const assignees = assigneeUsers.map(u => ({
-      userId: new Types.ObjectId(u.id),
-      name: u.name,
-      initials: u.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) || 'U',
-      bg: 'bg-indigo-500',
-    }));
+    const assignees = assigneeUsers.map(u => {
+      const rawId = (u as any).userId || (u as any).id;
+      const isValidObjectId = rawId && Types.ObjectId.isValid(rawId);
+      return {
+        userId: isValidObjectId ? new Types.ObjectId(rawId) : new Types.ObjectId(),
+        name: u.name,
+        initials: (u as any).initials || u.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().substring(0, 2) || 'U',
+        bg: (u as any).bg || 'bg-indigo-500',
+      };
+    });
 
     const initialWorkLogs = (actualHours && actualHours > 0)
       ? [{ hours: actualHours, date: new Date() }]
@@ -117,7 +121,8 @@ export class TaskService {
       currentLogs.push({
         hours: newHrs,
         date: updateData.newWorkLog.date ? new Date(updateData.newWorkLog.date) : new Date(),
-        userName: updateData.newWorkLog.userName || '',
+        userName: updateData.newWorkLog.userName || updateData.updatedByUserName || '',
+        userId: updateData.newWorkLog.userId || (updateData.updatedByUserId ? new Types.ObjectId(updateData.updatedByUserId) : undefined),
       });
       updateData.workLogs = currentLogs;
       updateData.actualHours = currentLogs.reduce((acc: number, l: any) => acc + (l.hours || 0), 0);
@@ -134,6 +139,8 @@ export class TaskService {
         currentLogs.push({
           hours: diff,
           date: new Date(),
+          userName: updateData.updatedByUserName || '',
+          userId: updateData.updatedByUserId ? new Types.ObjectId(updateData.updatedByUserId) : undefined,
         });
         updateData.workLogs = currentLogs;
       } else if (newHours < currentLogsSum) {
@@ -149,7 +156,12 @@ export class TaskService {
           }
         }
         if (newHours > 0 && currentLogs.length === 0) {
-          currentLogs.push({ hours: newHours, date: new Date() });
+          currentLogs.push({
+            hours: newHours,
+            date: new Date(),
+            userName: updateData.updatedByUserName || '',
+            userId: updateData.updatedByUserId ? new Types.ObjectId(updateData.updatedByUserId) : undefined,
+          });
         }
         updateData.workLogs = currentLogs;
       }

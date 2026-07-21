@@ -78,7 +78,13 @@ export class TaskController {
   update = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
-      const task = await this.taskService.updateTask(id, req.body);
+      const currentUser = (req as any).user;
+      const updateData = {
+        ...req.body,
+        updatedByUserId: currentUser?.userId,
+        updatedByUserName: currentUser?.name || currentUser?.email,
+      };
+      const task = await this.taskService.updateTask(id, updateData);
 
       res.status(200).json({
         success: true,

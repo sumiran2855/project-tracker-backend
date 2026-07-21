@@ -88,7 +88,8 @@ export class IssueService {
       currentLogs.push({
         hours: newHrs,
         date: updateData.newWorkLog.date ? new Date(updateData.newWorkLog.date) : new Date(),
-        userName: updateData.newWorkLog.userName || '',
+        userName: updateData.newWorkLog.userName || updateData.updatedByUserName || '',
+        userId: updateData.newWorkLog.userId || (updateData.updatedByUserId ? new Types.ObjectId(updateData.updatedByUserId) : undefined),
       });
       updateData.workLogs = currentLogs;
       updateData.actualHours = currentLogs.reduce((acc: number, l: any) => acc + (l.hours || 0), 0);
@@ -105,6 +106,8 @@ export class IssueService {
         currentLogs.push({
           hours: diff,
           date: new Date(),
+          userName: updateData.updatedByUserName || '',
+          userId: updateData.updatedByUserId ? new Types.ObjectId(updateData.updatedByUserId) : undefined,
         });
         updateData.workLogs = currentLogs;
       } else if (newHours < currentLogsSum) {
@@ -120,7 +123,12 @@ export class IssueService {
           }
         }
         if (newHours > 0 && currentLogs.length === 0) {
-          currentLogs.push({ hours: newHours, date: new Date() });
+          currentLogs.push({
+            hours: newHours,
+            date: new Date(),
+            userName: updateData.updatedByUserName || '',
+            userId: updateData.updatedByUserId ? new Types.ObjectId(updateData.updatedByUserId) : undefined,
+          });
         }
         updateData.workLogs = currentLogs;
       }
