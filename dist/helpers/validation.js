@@ -60,8 +60,11 @@ export const TaskCreateSchema = z.object({
     startDate: z.string().default(''),
     dueDate: z.string().default(''),
     assignees: z.array(z.object({
-        id: z.string(),
+        id: z.string().optional(),
+        userId: z.string().optional(),
         name: z.string(),
+        initials: z.string().optional(),
+        bg: z.string().optional(),
     })).default([]),
     subtasks: z.array(z.object({
         id: z.string(),
@@ -85,7 +88,8 @@ export const TaskUpdateSchema = z.object({
     startDate: z.string().optional(),
     dueDate: z.string().optional(),
     assignees: z.array(z.object({
-        userId: z.string(),
+        id: z.string().optional(),
+        userId: z.string().optional(),
         name: z.string(),
         initials: z.string().optional(),
         bg: z.string().optional(),
@@ -113,8 +117,11 @@ export const IssueCreateSchema = z.object({
     projectId: z.string().min(1, 'Project ID is required'),
     dueDate: z.string().default(''),
     assignees: z.array(z.object({
-        id: z.string(),
+        id: z.string().optional(),
+        userId: z.string().optional(),
         name: z.string(),
+        initials: z.string().optional(),
+        bg: z.string().optional(),
     })).default([]),
     actualHours: z.number().nonnegative().optional(),
 });

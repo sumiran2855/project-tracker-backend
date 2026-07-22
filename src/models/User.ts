@@ -25,6 +25,11 @@ export interface IWorkspacePrefs {
   accentTint: string;
 }
 
+export interface IRefreshToken {
+  token: string;
+  expiresAt: Date;
+}
+
 export interface IUser extends Document {
   email: string;
   passwordHash: string;
@@ -41,9 +46,11 @@ export interface IUser extends Document {
   collaborators?: ICollaborator[];
   notificationPrefs?: INotificationPrefs;
   workspacePrefs?: IWorkspacePrefs;
+  refreshTokens: IRefreshToken[];
   createdAt: Date;
   updatedAt: Date;
 }
+
 
 const UserSchema = new Schema<IUser>(
   {
@@ -145,6 +152,15 @@ const UserSchema = new Schema<IUser>(
         weekStart: 'Monday',
         accentTint: '#6366f1',
       }),
+    },
+    refreshTokens: {
+      type: [
+        {
+          token: { type: String, required: true },
+          expiresAt: { type: Date, required: true }
+        }
+      ],
+      default: []
     },
   },
   {

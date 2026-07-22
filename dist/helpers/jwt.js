@@ -1,8 +1,14 @@
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
-export function generateToken(payload) {
-    return jwt.sign(payload, env.JWT_SECRET, { expiresIn: '1d' });
+export function generateAccessToken(payload) {
+    return jwt.sign(payload, env.JWT_SECRET, { expiresIn: '15m' });
+}
+export function generateRefreshToken(payload) {
+    return jwt.sign(payload, env.JWT_SECRET, { expiresIn: '7d' });
 }
 export function verifyToken(token) {
+    return jwt.verify(token, env.JWT_SECRET);
+}
+export function verifyRefreshToken(token) {
     return jwt.verify(token, env.JWT_SECRET);
 }

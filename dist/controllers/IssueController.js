@@ -58,7 +58,13 @@ export class IssueController {
     update = async (req, res, next) => {
         try {
             const { id } = req.params;
-            const issue = await this.issueService.updateIssue(id, req.body);
+            const currentUser = req.user;
+            const updateData = {
+                ...req.body,
+                updatedByUserId: currentUser?.userId,
+                updatedByUserName: currentUser?.name || currentUser?.email,
+            };
+            const issue = await this.issueService.updateIssue(id, updateData);
             res.status(200).json({
                 success: true,
                 data: { issue },

@@ -99,6 +99,15 @@ const UserSchema = new Schema({
             accentTint: '#6366f1',
         }),
     },
+    refreshTokens: {
+        type: [
+            {
+                token: { type: String, required: true },
+                expiresAt: { type: Date, required: true }
+            }
+        ],
+        default: []
+    },
 }, {
     timestamps: true,
     toJSON: {

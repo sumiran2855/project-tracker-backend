@@ -24,12 +24,21 @@ import { env } from './config/env.js';
 import { connectDatabase } from './config/db.js';
 import apiRouter from './routes/api.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { rateLimiter } from './middleware/rateLimiter.js';
 const app = express();
+// Trust proxy for correct IP determination behind reverse proxies
+app.set('trust proxy', 1);
 // Middlewares
 app.use(cors());
 app.use(express.json());
+// General rate limiter for all API routes (150 requests per 15 mins)
+const generalRateLimit = rateLimiter({
+    windowMs: 15 * 60 * 1000,
+    max: 150,
+    message: 'Too many requests, please try again after 15 minutes.',
+});
 // Routes
-app.use('/api', apiRouter);
+app.use('/api', generalRateLimit, apiRouter);
 // Healthcheck Route
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok', timestamp: new Date() });

@@ -1,7 +1,9 @@
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { env } from '../config/env.js';
 import { UserRepository } from '../repositories/UserRepository.js';
 import { CustomError } from '../helpers/CustomError.js';
-import { generateToken } from '../helpers/jwt.js';
+import { generateAccessToken, generateRefreshToken } from '../helpers/jwt.js';
 import { MailService } from './MailService.js';
 
 export class AuthService {
@@ -13,7 +15,7 @@ export class AuthService {
     this.mailService = new MailService();
   }
 
-  async register(name: string, email: string, password: string): Promise<{ user: any; token: string }> {
+  async register(name: string, email: string, password: string): Promise<{ user: any; accessToken: string; refreshToken: string }> {
     const existing = await this.userRepository.findByEmail(email);
     if (existing) {
       throw new CustomError(400, 'User with this email already exists');
@@ -30,19 +32,27 @@ export class AuthService {
       email,
       passwordHash,
       role,
+      refreshTokens: [],
     });
 
-    const token = generateToken({
+    const accessToken = generateAccessToken({
       userId: user.id,
       email: user.email,
       name: user.name,
       role: user.role,
     });
 
-    return { user, token };
+    const refreshToken = generateRefreshToken({ userId: user.id });
+
+    // Store refresh token
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    user.refreshTokens.push({ token: refreshToken, expiresAt });
+    await user.save();
+
+    return { user, accessToken, refreshToken };
   }
 
-  async login(email: string, password: string): Promise<{ user: any; token: string }> {
+  async login(email: string, password: string): Promise<{ user: any; accessToken: string; refreshToken: string }> {
     const user = await this.userRepository.findByEmail(email);
     if (!user) {
       throw new CustomError(401, 'Invalid email or password');
@@ -53,18 +63,96 @@ export class AuthService {
       throw new CustomError(401, 'Invalid email or password');
     }
 
-    const token = generateToken({
+    const accessToken = generateAccessToken({
       userId: user.id,
       email: user.email,
       name: user.name,
       role: user.role,
     });
 
+    const refreshToken = generateRefreshToken({ userId: user.id });
+
+    // Store refresh token
+    if (!user.refreshTokens) {
+      user.refreshTokens = [];
+    }
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    user.refreshTokens.push({ token: refreshToken, expiresAt });
+
     user.lastLogin = new Date();
     await user.save();
 
-    return { user, token };
+    return { user, accessToken, refreshToken };
   }
+
+  async refresh(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+    if (!refreshToken) {
+      throw new CustomError(400, 'Refresh token is required');
+    }
+
+    let decoded: any;
+    try {
+      decoded = jwt.verify(refreshToken, env.JWT_SECRET);
+    } catch (err) {
+      throw new CustomError(401, 'Invalid or expired refresh token');
+    }
+
+    const userId = decoded.userId;
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new CustomError(401, 'User not found');
+    }
+
+    // Check if refresh token is in the database
+    const tokenIndex = user.refreshTokens.findIndex(rt => rt.token === refreshToken);
+
+    if (tokenIndex === -1) {
+      // Reuse detected! Invalidate all sessions for this user.
+      user.refreshTokens = [];
+      await user.save();
+      throw new CustomError(403, 'Refresh token reuse detected. All sessions revoked.');
+    }
+
+    const tokenObj = user.refreshTokens[tokenIndex];
+
+    // Check if expired
+    if (new Date() > new Date(tokenObj.expiresAt)) {
+      user.refreshTokens.splice(tokenIndex, 1);
+      await user.save();
+      throw new CustomError(401, 'Refresh token expired');
+    }
+
+    // Rotation: generate new access and refresh tokens
+    const payload = {
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    };
+    const newAccessToken = generateAccessToken(payload);
+    const newRefreshToken = generateRefreshToken({ userId: user.id });
+
+    // Remove the old token, add the new one
+    user.refreshTokens.splice(tokenIndex, 1);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    user.refreshTokens.push({ token: newRefreshToken, expiresAt });
+    await user.save();
+
+    return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+  }
+
+  async logout(userId: string, refreshToken?: string): Promise<void> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) return;
+
+    if (refreshToken) {
+      user.refreshTokens = user.refreshTokens.filter(rt => rt.token !== refreshToken);
+    } else {
+      user.refreshTokens = [];
+    }
+    await user.save();
+  }
+
 
   async updateRole(userId: string, newRole: string): Promise<any> {
     const user = await this.userRepository.findById(userId);
