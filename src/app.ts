@@ -43,7 +43,7 @@ app.use(express.json());
 // General rate limiter for all API routes (150 requests per 15 mins)
 const generalRateLimit = rateLimiter({
   windowMs: 15 * 60 * 1000,
-  max: 150,
+  max: 1000,
   message: 'Too many requests, please try again after 15 minutes.',
 });
 

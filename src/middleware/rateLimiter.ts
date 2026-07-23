@@ -19,6 +19,16 @@ export function rateLimiter(options: RateLimiterOptions) {
 
   return (req: Request, res: Response, next: NextFunction): void => {
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
+
+    if (
+      process.env.NODE_ENV !== 'production' ||
+      ip === '127.0.0.1' ||
+      ip === '::1' ||
+      ip === '::ffff:127.0.0.1'
+    ) {
+      return next();
+    }
+
     const now = Date.now();
 
     if (!store[ip]) {
