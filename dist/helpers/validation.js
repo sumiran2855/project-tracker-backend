@@ -124,6 +124,9 @@ export const IssueCreateSchema = z.object({
         bg: z.string().optional(),
     })).default([]),
     actualHours: z.number().nonnegative().optional(),
+    relatedTaskId: z.string().optional().nullable(),
+    relatedTaskTitle: z.string().optional().nullable(),
+    attachments: z.array(z.string()).default([]),
 });
 export const IssueUpdateSchema = z.object({
     title: z.string().optional(),
@@ -139,6 +142,9 @@ export const IssueUpdateSchema = z.object({
         bg: z.string().optional(),
     })).optional(),
     actualHours: z.number().nonnegative().optional(),
+    relatedTaskId: z.string().optional().nullable(),
+    relatedTaskTitle: z.string().optional().nullable(),
+    attachments: z.array(z.string()).optional(),
 });
 export const ForgotPasswordSchema = z.object({
     email: z.string().email('Please enter a valid email address'),

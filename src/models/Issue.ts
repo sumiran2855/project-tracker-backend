@@ -28,6 +28,9 @@ export interface IIssue extends Document {
   commentsCount: number;
   actualHours?: number;
   workLogs?: IWorkLog[];
+  relatedTaskId?: Types.ObjectId;
+  relatedTaskTitle?: string;
+  attachments?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -98,6 +101,19 @@ const IssueSchema = new Schema<IIssue>(
         date: { type: Date, default: Date.now },
       },
     ],
+    relatedTaskId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Task',
+      required: false,
+    },
+    relatedTaskTitle: {
+      type: String,
+      required: false,
+    },
+    attachments: {
+      type: [String],
+      default: [],
+    },
   },
   {
     timestamps: true,

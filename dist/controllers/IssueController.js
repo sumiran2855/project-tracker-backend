@@ -1,4 +1,7 @@
 import { IssueService } from '../services/IssueService.js';
+import { v2 as cloudinary } from 'cloudinary';
+import { env } from '../config/env.js';
+import fs from 'fs';
 export class IssueController {
     issueService;
     constructor() {
@@ -6,11 +9,54 @@ export class IssueController {
     }
     create = async (req, res, next) => {
         try {
-            const { title, description, status, priority, type, projectId, dueDate, assignees } = req.body;
-            const issue = await this.issueService.createIssue(title, description, status, priority, type, projectId, dueDate, assignees);
+            const { title, description, status, priority, type, projectId, dueDate, assignees, relatedTaskId, relatedTaskTitle, attachments } = req.body;
+            const issue = await this.issueService.createIssue(title, description, status, priority, type, projectId, dueDate, assignees, relatedTaskId, relatedTaskTitle, attachments);
             res.status(201).json({
                 success: true,
                 data: { issue },
+            });
+        }
+        catch (error) {
+            next(error);
+        }
+    };
+    uploadAttachment = async (req, res, next) => {
+        try {
+            if (!req.file) {
+                res.status(400).json({ success: false, message: 'No file uploaded' });
+                return;
+            }
+            // Check if Cloudinary is configured
+            if (env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET) {
+                cloudinary.config({
+                    cloud_name: env.CLOUDINARY_CLOUD_NAME,
+                    api_key: env.CLOUDINARY_API_KEY,
+                    api_secret: env.CLOUDINARY_API_SECRET
+                });
+                try {
+                    const result = await cloudinary.uploader.upload(req.file.path, {
+                        folder: 'issues_attachments'
+                    });
+                    // Clean up local temp file asynchronously
+                    fs.promises.unlink(req.file.path).catch(err => {
+                        console.error('Failed to delete temp file:', err);
+                    });
+                    res.status(200).json({
+                        success: true,
+                        data: { url: result.secure_url }
+                    });
+                    return;
+                }
+                catch (uploadError) {
+                    console.error('Cloudinary upload failed, falling back to local storage:', uploadError);
+                    // If Cloudinary upload fails, fall back to local disk storage below
+                }
+            }
+            // Fallback: Local disk storage
+            const fileUrl = `/uploads/${req.file.filename}`;
+            res.status(200).json({
+                success: true,
+                data: { url: fileUrl }
             });
         }
         catch (error) {

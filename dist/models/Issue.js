@@ -64,6 +64,19 @@ const IssueSchema = new Schema({
             date: { type: Date, default: Date.now },
         },
     ],
+    relatedTaskId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Task',
+        required: false,
+    },
+    relatedTaskTitle: {
+        type: String,
+        required: false,
+    },
+    attachments: {
+        type: [String],
+        default: [],
+    },
 }, {
     timestamps: true,
     toJSON: {

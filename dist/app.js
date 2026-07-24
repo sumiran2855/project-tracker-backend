@@ -20,6 +20,8 @@ if (dns.promises) {
 }
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import fs from 'fs';
 import { env } from './config/env.js';
 import { connectDatabase } from './config/db.js';
 import apiRouter from './routes/api.js';
@@ -31,10 +33,17 @@ app.set('trust proxy', 1);
 // Middlewares
 app.use(cors());
 app.use(express.json());
+// Ensure uploads directory exists
+const uploadsDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+// Serve uploads statically
+app.use('/uploads', express.static(uploadsDir));
 // General rate limiter for all API routes (150 requests per 15 mins)
 const generalRateLimit = rateLimiter({
     windowMs: 15 * 60 * 1000,
-    max: 150,
+    max: 1000,
     message: 'Too many requests, please try again after 15 minutes.',
 });
 // Routes

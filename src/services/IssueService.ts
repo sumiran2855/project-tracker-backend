@@ -20,7 +20,10 @@ export class IssueService {
     type: 'Bug' | 'Task' | 'Improvement' | 'Security',
     projectId: string,
     dueDate: string,
-    assigneeUsers: { id: string; name: string }[]
+    assigneeUsers: { id: string; name: string }[],
+    relatedTaskId?: string,
+    relatedTaskTitle?: string,
+    attachments?: string[]
   ): Promise<any> {
     const project = await this.projectRepository.findById(projectId);
     if (!project) {
@@ -44,6 +47,9 @@ export class IssueService {
       projectName: project.name,
       dueDate,
       assignees,
+      relatedTaskId: relatedTaskId ? new Types.ObjectId(relatedTaskId) : undefined,
+      relatedTaskTitle,
+      attachments: attachments || [],
     });
 
     // Increment commentsCount or other properties on project if required

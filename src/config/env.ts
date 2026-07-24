@@ -16,6 +16,9 @@ const envSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().min(1, 'NEXT_PUBLIC_APP_URL is required'),
   RESEND_API_KEY: z.string().optional(),
   RESEND_SENDER_VERIFIED: z.string().optional(),
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
 }).refine(data => {
   if (!data.RESEND_API_KEY) {
     return !!data.SMTP_HOST && !!data.SMTP_USER && !!data.SMTP_PASS;

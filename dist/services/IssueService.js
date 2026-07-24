@@ -9,7 +9,7 @@ export class IssueService {
         this.issueRepository = new IssueRepository();
         this.projectRepository = new ProjectRepository();
     }
-    async createIssue(title, description, status, priority, type, projectId, dueDate, assigneeUsers) {
+    async createIssue(title, description, status, priority, type, projectId, dueDate, assigneeUsers, relatedTaskId, relatedTaskTitle, attachments) {
         const project = await this.projectRepository.findById(projectId);
         if (!project) {
             throw new CustomError(404, 'Project not found');
@@ -30,6 +30,9 @@ export class IssueService {
             projectName: project.name,
             dueDate,
             assignees,
+            relatedTaskId: relatedTaskId ? new Types.ObjectId(relatedTaskId) : undefined,
+            relatedTaskTitle,
+            attachments: attachments || [],
         });
         // Increment commentsCount or other properties on project if required
         return issue;
