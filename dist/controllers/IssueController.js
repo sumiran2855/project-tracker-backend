@@ -1,11 +1,14 @@
 import { IssueService } from '../services/IssueService.js';
+import { ProjectService } from '../services/ProjectService.js';
 import { v2 as cloudinary } from 'cloudinary';
 import { env } from '../config/env.js';
 import fs from 'fs';
 export class IssueController {
     issueService;
+    projectService;
     constructor() {
         this.issueService = new IssueService();
+        this.projectService = new ProjectService();
     }
     create = async (req, res, next) => {
         try {
@@ -66,6 +69,8 @@ export class IssueController {
     getByProject = async (req, res, next) => {
         try {
             const { projectId } = req.params;
+            const user = req.user;
+            await this.projectService.getProjectById(projectId, user.userId, user.role);
             const issues = await this.issueService.getIssuesByProject(projectId);
             res.status(200).json({
                 success: true,
@@ -78,7 +83,11 @@ export class IssueController {
     };
     getAll = async (req, res, next) => {
         try {
-            const issues = await this.issueService.getAllIssues();
+            const user = req.user;
+            const projects = await this.projectService.getProjectsForUser(user.userId, user.role);
+            const projectIds = projects.map(p => p._id.toString());
+            const allIssues = await this.issueService.getAllIssues();
+            const issues = allIssues.filter(i => i.projectId && projectIds.includes(i.projectId.toString()));
             res.status(200).json({
                 success: true,
                 data: { issues },
@@ -91,7 +100,9 @@ export class IssueController {
     getById = async (req, res, next) => {
         try {
             const { id } = req.params;
+            const user = req.user;
             const issue = await this.issueService.getIssueById(id);
+            await this.projectService.getProjectById(issue.projectId.toString(), user.userId, user.role);
             res.status(200).json({
                 success: true,
                 data: { issue },
@@ -105,15 +116,17 @@ export class IssueController {
         try {
             const { id } = req.params;
             const currentUser = req.user;
+            const issue = await this.issueService.getIssueById(id);
+            await this.projectService.getProjectById(issue.projectId.toString(), currentUser.userId, currentUser.role);
             const updateData = {
                 ...req.body,
                 updatedByUserId: currentUser?.userId,
                 updatedByUserName: currentUser?.name || currentUser?.email,
             };
-            const issue = await this.issueService.updateIssue(id, updateData);
+            const updatedIssue = await this.issueService.updateIssue(id, updateData);
             res.status(200).json({
                 success: true,
-                data: { issue },
+                data: { issue: updatedIssue },
             });
         }
         catch (error) {
@@ -123,6 +136,9 @@ export class IssueController {
     delete = async (req, res, next) => {
         try {
             const { id } = req.params;
+            const user = req.user;
+            const issue = await this.issueService.getIssueById(id);
+            await this.projectService.getProjectById(issue.projectId.toString(), user.userId, user.role);
             await this.issueService.deleteIssue(id);
             res.status(200).json({
                 success: true,

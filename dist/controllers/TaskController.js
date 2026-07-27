@@ -1,8 +1,12 @@
 import { TaskService } from '../services/TaskService.js';
+import { ProjectService } from '../services/ProjectService.js';
+import { CustomError } from '../helpers/CustomError.js';
 export class TaskController {
     taskService;
+    projectService;
     constructor() {
         this.taskService = new TaskService();
+        this.projectService = new ProjectService();
     }
     create = async (req, res, next) => {
         try {
@@ -20,10 +24,16 @@ export class TaskController {
     getByProject = async (req, res, next) => {
         try {
             const { projectId } = req.params;
+            const user = req.user;
+            await this.projectService.getProjectById(projectId, user.userId, user.role);
             const tasks = await this.taskService.getTasksByProject(projectId);
+            let filteredTasks = tasks;
+            if (user.role?.toLowerCase() === 'employee') {
+                filteredTasks = tasks.filter(t => t.assignees && t.assignees.some((a) => a.userId?.toString() === user.userId.toString()));
+            }
             res.status(200).json({
                 success: true,
-                data: { tasks },
+                data: { tasks: filteredTasks },
             });
         }
         catch (error) {
@@ -32,7 +42,14 @@ export class TaskController {
     };
     getAll = async (req, res, next) => {
         try {
-            const tasks = await this.taskService.getAllTasks();
+            const user = req.user;
+            const projects = await this.projectService.getProjectsForUser(user.userId, user.role);
+            const projectIds = projects.map(p => p._id.toString());
+            const allTasks = await this.taskService.getAllTasks();
+            let tasks = allTasks.filter(t => t.projectId && projectIds.includes(t.projectId.toString()));
+            if (user.role?.toLowerCase() === 'employee') {
+                tasks = tasks.filter(t => t.assignees && t.assignees.some((a) => a.userId?.toString() === user.userId.toString()));
+            }
             res.status(200).json({
                 success: true,
                 data: { tasks },
@@ -45,7 +62,15 @@ export class TaskController {
     getById = async (req, res, next) => {
         try {
             const { id } = req.params;
+            const user = req.user;
             const task = await this.taskService.getTaskById(id);
+            await this.projectService.getProjectById(task.projectId.toString(), user.userId, user.role);
+            if (user.role?.toLowerCase() === 'employee') {
+                const isAssigned = task.assignees && task.assignees.some((a) => a.userId?.toString() === user.userId.toString());
+                if (!isAssigned) {
+                    throw new CustomError(403, 'Access denied: You are not assigned to this task');
+                }
+            }
             res.status(200).json({
                 success: true,
                 data: { task },
@@ -59,15 +84,23 @@ export class TaskController {
         try {
             const { id } = req.params;
             const currentUser = req.user;
+            const task = await this.taskService.getTaskById(id);
+            await this.projectService.getProjectById(task.projectId.toString(), currentUser.userId, currentUser.role);
+            if (currentUser.role?.toLowerCase() === 'employee') {
+                const isAssigned = task.assignees && task.assignees.some((a) => a.userId?.toString() === currentUser.userId.toString());
+                if (!isAssigned) {
+                    throw new CustomError(403, 'Access denied: You are not assigned to this task');
+                }
+            }
             const updateData = {
                 ...req.body,
                 updatedByUserId: currentUser?.userId,
                 updatedByUserName: currentUser?.name || currentUser?.email,
             };
-            const task = await this.taskService.updateTask(id, updateData);
+            const updatedTask = await this.taskService.updateTask(id, updateData);
             res.status(200).json({
                 success: true,
-                data: { task },
+                data: { task: updatedTask },
             });
         }
         catch (error) {
@@ -77,6 +110,15 @@ export class TaskController {
     delete = async (req, res, next) => {
         try {
             const { id } = req.params;
+            const user = req.user;
+            const task = await this.taskService.getTaskById(id);
+            await this.projectService.getProjectById(task.projectId.toString(), user.userId, user.role);
+            if (user.role?.toLowerCase() === 'employee') {
+                const isAssigned = task.assignees && task.assignees.some((a) => a.userId?.toString() === user.userId.toString());
+                if (!isAssigned) {
+                    throw new CustomError(403, 'Access denied: You are not assigned to this task');
+                }
+            }
             await this.taskService.deleteTask(id);
             res.status(200).json({
                 success: true,

@@ -28,8 +28,8 @@ export class ProjectController {
 
   getAll = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = (req as any).user.userId;
-      const projects = await this.projectService.getProjectsForUser(userId);
+      const user = (req as any).user;
+      const projects = await this.projectService.getProjectsForUser(user.userId, user.role);
       
       res.status(200).json({
         success: true,
@@ -43,8 +43,8 @@ export class ProjectController {
   getById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
-      const userId = (req as any).user.userId;
-      const project = await this.projectService.getProjectById(id, userId);
+      const user = (req as any).user;
+      const project = await this.projectService.getProjectById(id, user.userId, user.role);
 
       res.status(200).json({
         success: true,
@@ -58,8 +58,8 @@ export class ProjectController {
   update = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
-      const userId = (req as any).user.userId;
-      const project = await this.projectService.updateProject(id, userId, req.body);
+      const user = (req as any).user;
+      const project = await this.projectService.updateProject(id, user.userId, user.role, req.body);
 
       res.status(200).json({
         success: true,

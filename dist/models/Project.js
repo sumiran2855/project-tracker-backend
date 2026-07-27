@@ -59,6 +59,21 @@ const ProjectSchema = new Schema({
         ref: 'User',
         required: true,
     },
+    managerId: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: false,
+    },
+    teamLeadId: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: false,
+    },
+    clientId: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: false,
+    },
     techStack: {
         type: [String],
         default: [],
@@ -95,6 +110,15 @@ const ProjectSchema = new Schema({
             const r = ret;
             if (r._id) {
                 r.id = r._id.toString();
+            }
+            if (r.managerId) {
+                r.managerId = r.managerId.toString();
+            }
+            if (r.teamLeadId) {
+                r.teamLeadId = r.teamLeadId.toString();
+            }
+            if (r.clientId) {
+                r.clientId = r.clientId.toString();
             }
             delete r._id;
             delete r.__v;

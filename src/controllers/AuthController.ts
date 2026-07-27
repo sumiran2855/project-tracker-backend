@@ -120,7 +120,7 @@ export class AuthController {
 
   getEmployees = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const employees = await this.authService.getEmployees();
+      const employees = await this.authService.getEmployees((req as any).user);
       res.status(200).json({
         success: true,
         data: { employees },

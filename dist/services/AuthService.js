@@ -5,6 +5,7 @@ import { UserRepository } from '../repositories/UserRepository.js';
 import { CustomError } from '../helpers/CustomError.js';
 import { generateAccessToken, generateRefreshToken } from '../helpers/jwt.js';
 import { MailService } from './MailService.js';
+import { Project } from '../models/Project.js';
 export class AuthService {
     userRepository;
     mailService;
@@ -200,10 +201,79 @@ export class AuthService {
         user.resetTokenExpires = undefined;
         await user.save();
     }
-    async getEmployees() {
+    async getEmployees(currentUser) {
         const users = await this.userRepository.find();
+        let filteredUsers = users;
+        if (currentUser) {
+            const userRole = currentUser.role?.toLowerCase();
+            const userIdStr = currentUser.userId;
+            if (userRole === 'admin') {
+                // Admin sees: Managers, Team Leads, Employees
+                filteredUsers = users.filter(u => {
+                    const r = u.role?.toLowerCase();
+                    return r === 'manager' || r === 'team lead' || r === 'employee';
+                });
+            }
+            else if (userRole === 'employee') {
+                // Employee sees: only Employees
+                filteredUsers = users.filter(u => u.role?.toLowerCase() === 'employee');
+            }
+            else {
+                // For Manager, Team Lead, and Client, filter by shared projects
+                const userProjects = await Project.find({
+                    $or: [
+                        { ownerId: userIdStr },
+                        { managerId: userIdStr },
+                        { teamLeadId: userIdStr },
+                        { clientId: userIdStr },
+                        { 'members.userId': userIdStr }
+                    ]
+                });
+                const sharedUserIds = new Set();
+                for (const proj of userProjects) {
+                    if (proj.ownerId)
+                        sharedUserIds.add(proj.ownerId.toString());
+                    if (proj.managerId)
+                        sharedUserIds.add(proj.managerId.toString());
+                    if (proj.teamLeadId)
+                        sharedUserIds.add(proj.teamLeadId.toString());
+                    if (proj.clientId)
+                        sharedUserIds.add(proj.clientId.toString());
+                    if (proj.members) {
+                        for (const m of proj.members) {
+                            if (m.userId)
+                                sharedUserIds.add(m.userId.toString());
+                        }
+                    }
+                }
+                if (userRole === 'manager') {
+                    // Manager sees: Team Leads, Employees assigned to at least one shared project
+                    filteredUsers = users.filter(u => {
+                        const r = u.role?.toLowerCase();
+                        const isTargetRole = r === 'team lead' || r === 'employee';
+                        return isTargetRole && sharedUserIds.has(u._id.toString());
+                    });
+                }
+                else if (userRole === 'team lead') {
+                    // Team Lead sees: Employees assigned to at least one shared project
+                    filteredUsers = users.filter(u => {
+                        const r = u.role?.toLowerCase();
+                        const isTargetRole = r === 'employee';
+                        return isTargetRole && sharedUserIds.has(u._id.toString());
+                    });
+                }
+                else if (userRole === 'client') {
+                    // Client sees: Managers, Team Leads, Employees assigned to shared projects
+                    filteredUsers = users.filter(u => {
+                        const r = u.role?.toLowerCase();
+                        const isTargetRole = r === 'manager' || r === 'team lead' || r === 'employee';
+                        return isTargetRole && sharedUserIds.has(u._id.toString());
+                    });
+                }
+            }
+        }
         const bgColors = ['bg-indigo-500', 'bg-emerald-500', 'bg-violet-500', 'bg-rose-500', 'bg-amber-500', 'bg-sky-500', 'bg-blue-500'];
-        return users.map(u => {
+        return filteredUsers.map(u => {
             let hash = 0;
             const name = u.name || '';
             for (let i = 0; i < name.length; i++) {

@@ -33,6 +33,9 @@ export const ProjectCreateSchema = z.object({
     initials: z.string().optional(),
     bg: z.string().optional(),
   })).default([]),
+  managerId: z.string().optional(),
+  teamLeadId: z.string().optional(),
+  clientId: z.string().optional(),
 });
 
 export const ProjectUpdateSchema = z.object({
@@ -55,6 +58,9 @@ export const ProjectUpdateSchema = z.object({
     initials: z.string().optional(),
     bg: z.string().optional(),
   })).optional(),
+  managerId: z.string().optional(),
+  teamLeadId: z.string().optional(),
+  clientId: z.string().optional(),
 });
 
 export const TaskCreateSchema = z.object({

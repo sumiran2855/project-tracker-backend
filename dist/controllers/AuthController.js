@@ -114,7 +114,7 @@ export class AuthController {
     };
     getEmployees = async (req, res, next) => {
         try {
-            const employees = await this.authService.getEmployees();
+            const employees = await this.authService.getEmployees(req.user);
             res.status(200).json({
                 success: true,
                 data: { employees },

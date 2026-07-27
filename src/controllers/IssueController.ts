@@ -1,14 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 import { IssueService } from '../services/IssueService.js';
+import { ProjectService } from '../services/ProjectService.js';
 import { v2 as cloudinary } from 'cloudinary';
 import { env } from '../config/env.js';
 import fs from 'fs';
 
 export class IssueController {
   private issueService: IssueService;
+  private projectService: ProjectService;
 
   constructor() {
     this.issueService = new IssueService();
+    this.projectService = new ProjectService();
   }
 
   create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -87,6 +90,9 @@ export class IssueController {
   getByProject = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { projectId } = req.params;
+      const user = (req as any).user;
+      await this.projectService.getProjectById(projectId, user.userId, user.role);
+
       const issues = await this.issueService.getIssuesByProject(projectId);
 
       res.status(200).json({
@@ -100,7 +106,12 @@ export class IssueController {
 
   getAll = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const issues = await this.issueService.getAllIssues();
+      const user = (req as any).user;
+      const projects = await this.projectService.getProjectsForUser(user.userId, user.role);
+      const projectIds = projects.map(p => p._id.toString());
+
+      const allIssues = await this.issueService.getAllIssues();
+      const issues = allIssues.filter(i => i.projectId && projectIds.includes(i.projectId.toString()));
 
       res.status(200).json({
         success: true,
@@ -114,7 +125,10 @@ export class IssueController {
   getById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
+      const user = (req as any).user;
       const issue = await this.issueService.getIssueById(id);
+
+      await this.projectService.getProjectById(issue.projectId.toString(), user.userId, user.role);
 
       res.status(200).json({
         success: true,
@@ -129,16 +143,20 @@ export class IssueController {
     try {
       const { id } = req.params;
       const currentUser = (req as any).user;
+      const issue = await this.issueService.getIssueById(id);
+
+      await this.projectService.getProjectById(issue.projectId.toString(), currentUser.userId, currentUser.role);
+
       const updateData = {
         ...req.body,
         updatedByUserId: currentUser?.userId,
         updatedByUserName: currentUser?.name || currentUser?.email,
       };
-      const issue = await this.issueService.updateIssue(id, updateData);
+      const updatedIssue = await this.issueService.updateIssue(id, updateData);
 
       res.status(200).json({
         success: true,
-        data: { issue },
+        data: { issue: updatedIssue },
       });
     } catch (error) {
       next(error);
@@ -148,6 +166,11 @@ export class IssueController {
   delete = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
+      const user = (req as any).user;
+      const issue = await this.issueService.getIssueById(id);
+
+      await this.projectService.getProjectById(issue.projectId.toString(), user.userId, user.role);
+
       await this.issueService.deleteIssue(id);
 
       res.status(200).json({

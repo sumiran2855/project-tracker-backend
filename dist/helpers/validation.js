@@ -29,6 +29,9 @@ export const ProjectCreateSchema = z.object({
         initials: z.string().optional(),
         bg: z.string().optional(),
     })).default([]),
+    managerId: z.string().optional(),
+    teamLeadId: z.string().optional(),
+    clientId: z.string().optional(),
 });
 export const ProjectUpdateSchema = z.object({
     name: z.string().min(3).optional(),
@@ -50,6 +53,9 @@ export const ProjectUpdateSchema = z.object({
         initials: z.string().optional(),
         bg: z.string().optional(),
     })).optional(),
+    managerId: z.string().optional(),
+    teamLeadId: z.string().optional(),
+    clientId: z.string().optional(),
 });
 export const TaskCreateSchema = z.object({
     title: z.string().min(1, 'Task title is required'),

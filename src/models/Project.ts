@@ -20,6 +20,9 @@ export interface IProject extends Document {
   dueDate: string;
   members: IProjectMember[];
   ownerId: Types.ObjectId;
+  managerId?: Types.ObjectId;
+  teamLeadId?: Types.ObjectId;
+  clientId?: Types.ObjectId;
   techStack?: string[];
   priority?: 'Low' | 'Medium' | 'High' | 'Critical';
   budget?: string;
@@ -92,6 +95,21 @@ const ProjectSchema = new Schema<IProject>(
       ref: 'User',
       required: true,
     },
+    managerId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+    },
+    teamLeadId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+    },
+    clientId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+    },
     techStack: {
       type: [String],
       default: [],
@@ -129,6 +147,15 @@ const ProjectSchema = new Schema<IProject>(
         const r = ret as any;
         if (r._id) {
           r.id = r._id.toString();
+        }
+        if (r.managerId) {
+          r.managerId = r.managerId.toString();
+        }
+        if (r.teamLeadId) {
+          r.teamLeadId = r.teamLeadId.toString();
+        }
+        if (r.clientId) {
+          r.clientId = r.clientId.toString();
         }
         delete r._id;
         delete r.__v;

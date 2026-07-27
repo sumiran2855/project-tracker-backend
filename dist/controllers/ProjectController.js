@@ -22,8 +22,8 @@ export class ProjectController {
     };
     getAll = async (req, res, next) => {
         try {
-            const userId = req.user.userId;
-            const projects = await this.projectService.getProjectsForUser(userId);
+            const user = req.user;
+            const projects = await this.projectService.getProjectsForUser(user.userId, user.role);
             res.status(200).json({
                 success: true,
                 data: { projects },
@@ -36,8 +36,8 @@ export class ProjectController {
     getById = async (req, res, next) => {
         try {
             const { id } = req.params;
-            const userId = req.user.userId;
-            const project = await this.projectService.getProjectById(id, userId);
+            const user = req.user;
+            const project = await this.projectService.getProjectById(id, user.userId, user.role);
             res.status(200).json({
                 success: true,
                 data: { project },
@@ -50,8 +50,8 @@ export class ProjectController {
     update = async (req, res, next) => {
         try {
             const { id } = req.params;
-            const userId = req.user.userId;
-            const project = await this.projectService.updateProject(id, userId, req.body);
+            const user = req.user;
+            const project = await this.projectService.updateProject(id, user.userId, user.role, req.body);
             res.status(200).json({
                 success: true,
                 data: { project },
