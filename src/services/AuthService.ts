@@ -23,7 +23,7 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    
+
     // Seed database with first user as Admin if no users exist, otherwise default to Employee
     const allUsers = await this.userRepository.find();
     const role = allUsers.length === 0 ? 'Admin' : 'Employee';
@@ -250,24 +250,24 @@ export class AuthService {
 
   async getEmployees(currentUser?: { userId: string; role: string }): Promise<any[]> {
     const users = await this.userRepository.find();
-    
+
     let filteredUsers = users;
 
     if (currentUser) {
       const userRole = currentUser.role?.toLowerCase();
       const userIdStr = currentUser.userId;
 
-      if (userRole === 'admin') {
-        // Admin sees: Managers, Team Leads, Employees
+      if (userRole === 'admin' || userRole === 'manager' || userRole === 'team lead') {
+        // Admin, Manager, and Team Lead see: Managers, Team Leads, Employees, Clients
         filteredUsers = users.filter(u => {
           const r = u.role?.toLowerCase();
-          return r === 'manager' || r === 'team lead' || r === 'employee';
+          return r === 'manager' || r === 'team lead' || r === 'employee' || r === 'client';
         });
       } else if (userRole === 'employee') {
         // Employee sees: only Employees
         filteredUsers = users.filter(u => u.role?.toLowerCase() === 'employee');
-      } else {
-        // For Manager, Team Lead, and Client, filter by shared projects
+      } else if (userRole === 'client') {
+        // Client sees: Managers, Team Leads, Employees assigned to shared projects
         const userProjects = await Project.find({
           $or: [
             { ownerId: userIdStr },
@@ -291,28 +291,11 @@ export class AuthService {
           }
         }
 
-        if (userRole === 'manager') {
-          // Manager sees: Team Leads, Employees assigned to at least one shared project
-          filteredUsers = users.filter(u => {
-            const r = u.role?.toLowerCase();
-            const isTargetRole = r === 'team lead' || r === 'employee';
-            return isTargetRole && sharedUserIds.has(u._id.toString());
-          });
-        } else if (userRole === 'team lead') {
-          // Team Lead sees: Employees assigned to at least one shared project
-          filteredUsers = users.filter(u => {
-            const r = u.role?.toLowerCase();
-            const isTargetRole = r === 'employee';
-            return isTargetRole && sharedUserIds.has(u._id.toString());
-          });
-        } else if (userRole === 'client') {
-          // Client sees: Managers, Team Leads, Employees assigned to shared projects
-          filteredUsers = users.filter(u => {
-            const r = u.role?.toLowerCase();
-            const isTargetRole = r === 'manager' || r === 'team lead' || r === 'employee';
-            return isTargetRole && sharedUserIds.has(u._id.toString());
-          });
-        }
+        filteredUsers = users.filter(u => {
+          const r = u.role?.toLowerCase();
+          const isTargetRole = r === 'manager' || r === 'team lead' || r === 'employee';
+          return isTargetRole && sharedUserIds.has(u._id.toString());
+        });
       }
     }
 
@@ -336,14 +319,14 @@ export class AuthService {
   }
 
   async updateProfile(
-    userId: string, 
-    updateData: { 
-      name?: string; 
-      email?: string; 
-      role?: string; 
-      location?: string; 
-      department?: string; 
-      skills?: string[]; 
+    userId: string,
+    updateData: {
+      name?: string;
+      email?: string;
+      role?: string;
+      location?: string;
+      department?: string;
+      skills?: string[];
       collaborators?: any[];
     }
   ): Promise<any> {
@@ -407,7 +390,7 @@ export class AuthService {
     await inviter.save();
 
     const acceptUrl = `https://project-tracker-backend-d85g.onrender.com/api/auth/collab/accept?inviterId=${inviter.id}&inviteeId=${inviteeUser.id}`;
-    
+
     // Log the accept URL for testing in local environment
     console.log(`[COLLABORATION ACCEPT URL]: ${acceptUrl}`);
 
