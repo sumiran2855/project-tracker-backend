@@ -85,6 +85,12 @@ export const TaskCreateSchema = z.object({
         time: z.string(),
     })).default([]),
     actualHours: z.number().nonnegative().optional(),
+    newWorkLog: z.object({
+        hours: z.number(),
+        date: z.string().optional(),
+        userName: z.string().optional(),
+        userId: z.string().optional(),
+    }).optional(),
 });
 export const TaskUpdateSchema = z.object({
     title: z.string().optional(),
@@ -113,6 +119,12 @@ export const TaskUpdateSchema = z.object({
         time: z.string(),
     })).optional(),
     actualHours: z.number().nonnegative().optional(),
+    newWorkLog: z.object({
+        hours: z.number(),
+        date: z.string().optional(),
+        userName: z.string().optional(),
+        userId: z.string().optional(),
+    }).optional(),
 });
 export const IssueCreateSchema = z.object({
     title: z.string().min(1, 'Issue title is required'),
@@ -133,6 +145,12 @@ export const IssueCreateSchema = z.object({
     relatedTaskId: z.string().optional().nullable(),
     relatedTaskTitle: z.string().optional().nullable(),
     attachments: z.array(z.string()).default([]),
+    newWorkLog: z.object({
+        hours: z.number(),
+        date: z.string().optional(),
+        userName: z.string().optional(),
+        userId: z.string().optional(),
+    }).optional(),
 });
 export const IssueUpdateSchema = z.object({
     title: z.string().optional(),
@@ -151,6 +169,12 @@ export const IssueUpdateSchema = z.object({
     relatedTaskId: z.string().optional().nullable(),
     relatedTaskTitle: z.string().optional().nullable(),
     attachments: z.array(z.string()).optional(),
+    newWorkLog: z.object({
+        hours: z.number(),
+        date: z.string().optional(),
+        userName: z.string().optional(),
+        userId: z.string().optional(),
+    }).optional(),
 });
 export const ForgotPasswordSchema = z.object({
     email: z.string().email('Please enter a valid email address'),

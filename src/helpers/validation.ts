@@ -91,6 +91,12 @@ export const TaskCreateSchema = z.object({
     time: z.string(),
   })).default([]),
   actualHours: z.number().nonnegative().optional(),
+  newWorkLog: z.object({
+    hours: z.number(),
+    date: z.string().optional(),
+    userName: z.string().optional(),
+    userId: z.string().optional(),
+  }).optional(),
 });
 
 export const TaskUpdateSchema = z.object({
@@ -120,6 +126,12 @@ export const TaskUpdateSchema = z.object({
     time: z.string(),
   })).optional(),
   actualHours: z.number().nonnegative().optional(),
+  newWorkLog: z.object({
+    hours: z.number(),
+    date: z.string().optional(),
+    userName: z.string().optional(),
+    userId: z.string().optional(),
+  }).optional(),
 });
 
 export const IssueCreateSchema = z.object({
@@ -141,6 +153,12 @@ export const IssueCreateSchema = z.object({
   relatedTaskId: z.string().optional().nullable(),
   relatedTaskTitle: z.string().optional().nullable(),
   attachments: z.array(z.string()).default([]),
+  newWorkLog: z.object({
+    hours: z.number(),
+    date: z.string().optional(),
+    userName: z.string().optional(),
+    userId: z.string().optional(),
+  }).optional(),
 });
 
 export const IssueUpdateSchema = z.object({
@@ -160,6 +178,12 @@ export const IssueUpdateSchema = z.object({
   relatedTaskId: z.string().optional().nullable(),
   relatedTaskTitle: z.string().optional().nullable(),
   attachments: z.array(z.string()).optional(),
+  newWorkLog: z.object({
+    hours: z.number(),
+    date: z.string().optional(),
+    userName: z.string().optional(),
+    userId: z.string().optional(),
+  }).optional(),
 });
 
 export const ForgotPasswordSchema = z.object({

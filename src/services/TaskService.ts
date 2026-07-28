@@ -114,7 +114,7 @@ export class TaskService {
       }));
     }
 
-    // Auto-record timestamped workLog if actualHours is updated or workLogs provided
+    // Auto-record timestamped workLog if newWorkLog delta is provided
     if (updateData.newWorkLog) {
       const currentLogs = [...(task.workLogs || [])];
       const newHrs = Number(updateData.newWorkLog.hours) || 0;
@@ -125,10 +125,12 @@ export class TaskService {
         userId: updateData.newWorkLog.userId || (updateData.updatedByUserId ? new Types.ObjectId(updateData.updatedByUserId) : undefined),
       });
       updateData.workLogs = currentLogs;
-      updateData.actualHours = (task.actualHours || 0) + newHrs;
+      updateData.actualHours = currentLogs.reduce((sum, log) => sum + (Number(log.hours) || 0), 0);
       delete updateData.newWorkLog;
-    } else if (typeof updateData.actualHours === 'number' && !updateData.workLogs) {
-      // Do not alter workLogs when actualHours is updated directly.
+    } else {
+      // Enforce immutability and prevent metadata updates from overwriting hours or logs
+      delete updateData.workLogs;
+      delete updateData.actualHours;
     }
 
     const updatedTask = await this.taskRepository.update(taskId, updateData);

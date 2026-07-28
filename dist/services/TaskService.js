@@ -85,7 +85,7 @@ export class TaskService {
                 bg: u.bg || 'bg-indigo-500',
             }));
         }
-        // Auto-record timestamped workLog if actualHours is updated or workLogs provided
+        // Auto-record timestamped workLog if newWorkLog delta is provided
         if (updateData.newWorkLog) {
             const currentLogs = [...(task.workLogs || [])];
             const newHrs = Number(updateData.newWorkLog.hours) || 0;
@@ -96,50 +96,13 @@ export class TaskService {
                 userId: updateData.newWorkLog.userId || (updateData.updatedByUserId ? new Types.ObjectId(updateData.updatedByUserId) : undefined),
             });
             updateData.workLogs = currentLogs;
-            updateData.actualHours = currentLogs.reduce((acc, l) => acc + (l.hours || 0), 0);
+            updateData.actualHours = currentLogs.reduce((sum, log) => sum + (Number(log.hours) || 0), 0);
             delete updateData.newWorkLog;
         }
-        else if (typeof updateData.actualHours === 'number' && !updateData.workLogs) {
-            const newHours = Math.max(0, updateData.actualHours);
-            const currentLogs = (task.workLogs || []).map((l) => ({ ...l }));
-            const currentLogsSum = currentLogs.reduce((acc, l) => acc + (l.hours || 0), 0);
-            if (newHours === 0) {
-                updateData.workLogs = [];
-            }
-            else if (newHours > currentLogsSum) {
-                const diff = newHours - currentLogsSum;
-                currentLogs.push({
-                    hours: diff,
-                    date: new Date(),
-                    userName: updateData.updatedByUserName || '',
-                    userId: updateData.updatedByUserId ? new Types.ObjectId(updateData.updatedByUserId) : undefined,
-                });
-                updateData.workLogs = currentLogs;
-            }
-            else if (newHours < currentLogsSum) {
-                let toRemove = currentLogsSum - newHours;
-                for (let i = currentLogs.length - 1; i >= 0; i--) {
-                    if (toRemove <= 0)
-                        break;
-                    if (currentLogs[i].hours <= toRemove) {
-                        toRemove -= currentLogs[i].hours;
-                        currentLogs.splice(i, 1);
-                    }
-                    else {
-                        currentLogs[i].hours -= toRemove;
-                        toRemove = 0;
-                    }
-                }
-                if (newHours > 0 && currentLogs.length === 0) {
-                    currentLogs.push({
-                        hours: newHours,
-                        date: new Date(),
-                        userName: updateData.updatedByUserName || '',
-                        userId: updateData.updatedByUserId ? new Types.ObjectId(updateData.updatedByUserId) : undefined,
-                    });
-                }
-                updateData.workLogs = currentLogs;
-            }
+        else {
+            // Enforce immutability and prevent metadata updates from overwriting hours or logs
+            delete updateData.workLogs;
+            delete updateData.actualHours;
         }
         const updatedTask = await this.taskRepository.update(taskId, updateData);
         if (!updatedTask) {
