@@ -4,13 +4,10 @@ import { CustomError } from '../helpers/CustomError.js';
 import { Types } from 'mongoose';
 
 export class TaskService {
-  private taskRepository: TaskRepository;
-  private projectRepository: ProjectRepository;
-
-  constructor() {
-    this.taskRepository = new TaskRepository();
-    this.projectRepository = new ProjectRepository();
-  }
+  constructor(
+    private readonly taskRepository: TaskRepository,
+    private readonly projectRepository: ProjectRepository
+  ) {}
 
   private async recalculateProjectProgress(projectId: string): Promise<void> {
     const project = await this.projectRepository.findById(projectId);

@@ -1,13 +1,11 @@
-import { TaskRepository } from '../repositories/TaskRepository.js';
-import { ProjectRepository } from '../repositories/ProjectRepository.js';
 import { CustomError } from '../helpers/CustomError.js';
 import { Types } from 'mongoose';
 export class TaskService {
     taskRepository;
     projectRepository;
-    constructor() {
-        this.taskRepository = new TaskRepository();
-        this.projectRepository = new ProjectRepository();
+    constructor(taskRepository, projectRepository) {
+        this.taskRepository = taskRepository;
+        this.projectRepository = projectRepository;
     }
     async recalculateProjectProgress(projectId) {
         const project = await this.projectRepository.findById(projectId);

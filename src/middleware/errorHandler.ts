@@ -9,7 +9,7 @@ export function errorHandler(err: Error, req: Request, res: Response, next: Next
     });
   }
 
-  console.error('🔥 Internal Server Error:', err);
+  console.error('Internal Server Error:', err);
   return res.status(500).json({
     success: false,
     message: 'An unexpected internal server error occurred',

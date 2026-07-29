@@ -1,17 +1,15 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
-import { UserRepository } from '../repositories/UserRepository.js';
 import { CustomError } from '../helpers/CustomError.js';
 import { generateAccessToken, generateRefreshToken } from '../helpers/jwt.js';
-import { MailService } from './MailService.js';
 import { Project } from '../models/Project.js';
 export class AuthService {
     userRepository;
     mailService;
-    constructor() {
-        this.userRepository = new UserRepository();
-        this.mailService = new MailService();
+    constructor(userRepository, mailService) {
+        this.userRepository = userRepository;
+        this.mailService = mailService;
     }
     async register(name, email, password) {
         const existing = await this.userRepository.findByEmail(email);
@@ -207,19 +205,19 @@ export class AuthService {
         if (currentUser) {
             const userRole = currentUser.role?.toLowerCase();
             const userIdStr = currentUser.userId;
-            if (userRole === 'admin') {
-                // Admin sees: Managers, Team Leads, Employees
+            if (userRole === 'admin' || userRole === 'manager' || userRole === 'team lead') {
+                // Admin, Manager, and Team Lead see: Managers, Team Leads, Employees, Clients
                 filteredUsers = users.filter(u => {
                     const r = u.role?.toLowerCase();
-                    return r === 'manager' || r === 'team lead' || r === 'employee';
+                    return r === 'manager' || r === 'team lead' || r === 'employee' || r === 'client';
                 });
             }
             else if (userRole === 'employee') {
                 // Employee sees: only Employees
                 filteredUsers = users.filter(u => u.role?.toLowerCase() === 'employee');
             }
-            else {
-                // For Manager, Team Lead, and Client, filter by shared projects
+            else if (userRole === 'client') {
+                // Client sees: Managers, Team Leads, Employees assigned to shared projects
                 const userProjects = await Project.find({
                     $or: [
                         { ownerId: userIdStr },
@@ -246,30 +244,11 @@ export class AuthService {
                         }
                     }
                 }
-                if (userRole === 'manager') {
-                    // Manager sees: Team Leads, Employees assigned to at least one shared project
-                    filteredUsers = users.filter(u => {
-                        const r = u.role?.toLowerCase();
-                        const isTargetRole = r === 'team lead' || r === 'employee';
-                        return isTargetRole && sharedUserIds.has(u._id.toString());
-                    });
-                }
-                else if (userRole === 'team lead') {
-                    // Team Lead sees: Employees assigned to at least one shared project
-                    filteredUsers = users.filter(u => {
-                        const r = u.role?.toLowerCase();
-                        const isTargetRole = r === 'employee';
-                        return isTargetRole && sharedUserIds.has(u._id.toString());
-                    });
-                }
-                else if (userRole === 'client') {
-                    // Client sees: Managers, Team Leads, Employees assigned to shared projects
-                    filteredUsers = users.filter(u => {
-                        const r = u.role?.toLowerCase();
-                        const isTargetRole = r === 'manager' || r === 'team lead' || r === 'employee';
-                        return isTargetRole && sharedUserIds.has(u._id.toString());
-                    });
-                }
+                filteredUsers = users.filter(u => {
+                    const r = u.role?.toLowerCase();
+                    const isTargetRole = r === 'manager' || r === 'team lead' || r === 'employee';
+                    return isTargetRole && sharedUserIds.has(u._id.toString());
+                });
             }
         }
         const bgColors = ['bg-indigo-500', 'bg-emerald-500', 'bg-violet-500', 'bg-rose-500', 'bg-amber-500', 'bg-sky-500', 'bg-blue-500'];

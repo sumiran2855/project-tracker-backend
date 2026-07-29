@@ -4,13 +4,10 @@ import { ProjectService } from '../services/ProjectService.js';
 import { CustomError } from '../helpers/CustomError.js';
 
 export class TaskController {
-  private taskService: TaskService;
-  private projectService: ProjectService;
-
-  constructor() {
-    this.taskService = new TaskService();
-    this.projectService = new ProjectService();
-  }
+  constructor(
+    private readonly taskService: TaskService,
+    private readonly projectService: ProjectService
+  ) {}
 
   create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

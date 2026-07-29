@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { TaskController } from '../controllers/TaskController.js';
+import { taskController } from '../config/container.js';
 import { validate } from '../middleware/validate.js';
 import { TaskCreateSchema, TaskUpdateSchema } from '../helpers/validation.js';
 import { requireAuth, checkPermission } from '../middleware/auth.js';
 
 const router = Router();
-const controller = new TaskController();
+const controller = taskController;
 
 router.use(requireAuth);
 

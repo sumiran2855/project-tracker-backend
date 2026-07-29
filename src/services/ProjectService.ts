@@ -4,11 +4,7 @@ import { Types } from 'mongoose';
 import { User } from '../models/User.js';
 
 export class ProjectService {
-  private projectRepository: ProjectRepository;
-
-  constructor() {
-    this.projectRepository = new ProjectRepository();
-  }
+  constructor(private readonly projectRepository: ProjectRepository) {}
 
   mapMembers(members: any[]): any[] {
     const bgColors = ['bg-indigo-500', 'bg-emerald-500', 'bg-violet-500', 'bg-rose-500', 'bg-amber-500', 'bg-sky-500', 'bg-blue-500'];

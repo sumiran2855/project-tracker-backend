@@ -6,13 +6,10 @@ import { env } from '../config/env.js';
 import fs from 'fs';
 
 export class IssueController {
-  private issueService: IssueService;
-  private projectService: ProjectService;
-
-  constructor() {
-    this.issueService = new IssueService();
-    this.projectService = new ProjectService();
-  }
+  constructor(
+    private readonly issueService: IssueService,
+    private readonly projectService: ProjectService
+  ) {}
 
   create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

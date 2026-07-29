@@ -1,14 +1,12 @@
-import { IssueService } from '../services/IssueService.js';
-import { ProjectService } from '../services/ProjectService.js';
 import { v2 as cloudinary } from 'cloudinary';
 import { env } from '../config/env.js';
 import fs from 'fs';
 export class IssueController {
     issueService;
     projectService;
-    constructor() {
-        this.issueService = new IssueService();
-        this.projectService = new ProjectService();
+    constructor(issueService, projectService) {
+        this.issueService = issueService;
+        this.projectService = projectService;
     }
     create = async (req, res, next) => {
         try {

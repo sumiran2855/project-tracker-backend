@@ -1,12 +1,10 @@
-import { TaskService } from '../services/TaskService.js';
-import { ProjectService } from '../services/ProjectService.js';
 import { CustomError } from '../helpers/CustomError.js';
 export class TaskController {
     taskService;
     projectService;
-    constructor() {
-        this.taskService = new TaskService();
-        this.projectService = new ProjectService();
+    constructor(taskService, projectService) {
+        this.taskService = taskService;
+        this.projectService = projectService;
     }
     create = async (req, res, next) => {
         try {

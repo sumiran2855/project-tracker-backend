@@ -1,8 +1,7 @@
-import { AuthService } from '../services/AuthService.js';
 export class AuthController {
     authService;
-    constructor() {
-        this.authService = new AuthService();
+    constructor(authService) {
+        this.authService = authService;
     }
     register = async (req, res, next) => {
         try {

@@ -2,11 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/AuthService.js';
 
 export class AuthController {
-  private authService: AuthService;
-
-  constructor() {
-    this.authService = new AuthService();
-  }
+  constructor(private readonly authService: AuthService) {}
 
   register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

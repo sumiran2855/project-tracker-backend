@@ -1,8 +1,7 @@
-import { ProjectService } from '../services/ProjectService.js';
 export class ProjectController {
     projectService;
-    constructor() {
-        this.projectService = new ProjectService();
+    constructor(projectService) {
+        this.projectService = projectService;
     }
     create = async (req, res, next) => {
         try {

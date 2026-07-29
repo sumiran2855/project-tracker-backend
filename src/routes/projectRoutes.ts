@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { ProjectController } from '../controllers/ProjectController.js';
+import { projectController } from '../config/container.js';
 import { validate } from '../middleware/validate.js';
 import { ProjectCreateSchema, ProjectUpdateSchema } from '../helpers/validation.js';
 import { requireAuth, checkPermission } from '../middleware/auth.js';
 
 const router = Router();
-const controller = new ProjectController();
+const controller = projectController;
 
 router.use(requireAuth);
 

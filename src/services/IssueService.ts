@@ -4,13 +4,10 @@ import { CustomError } from '../helpers/CustomError.js';
 import { Types } from 'mongoose';
 
 export class IssueService {
-  private issueRepository: IssueRepository;
-  private projectRepository: ProjectRepository;
-
-  constructor() {
-    this.issueRepository = new IssueRepository();
-    this.projectRepository = new ProjectRepository();
-  }
+  constructor(
+    private readonly issueRepository: IssueRepository,
+    private readonly projectRepository: ProjectRepository
+  ) {}
 
   async createIssue(
     title: string,

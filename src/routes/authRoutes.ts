@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { AuthController } from '../controllers/AuthController.js';
+import { authController } from '../config/container.js';
 import { validate } from '../middleware/validate.js';
 import { RegisterSchema, LoginSchema, UpdateRoleSchema, ForgotPasswordSchema, ResetPasswordSchema } from '../helpers/validation.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { rateLimiter } from '../middleware/rateLimiter.js';
 
 const router = Router();
-const controller = new AuthController();
+const controller = authController;
 
 // Strict rate limit for auth endpoints
 const authRateLimit = rateLimiter({

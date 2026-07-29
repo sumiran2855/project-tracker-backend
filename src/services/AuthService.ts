@@ -8,13 +8,10 @@ import { MailService } from './MailService.js';
 import { Project } from '../models/Project.js';
 
 export class AuthService {
-  private userRepository: UserRepository;
-  private mailService: MailService;
-
-  constructor() {
-    this.userRepository = new UserRepository();
-    this.mailService = new MailService();
-  }
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly mailService: MailService
+  ) {}
 
   async register(name: string, email: string, password: string): Promise<{ user: any; accessToken: string; refreshToken: string }> {
     const existing = await this.userRepository.findByEmail(email);

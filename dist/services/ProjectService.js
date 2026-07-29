@@ -1,11 +1,10 @@
-import { ProjectRepository } from '../repositories/ProjectRepository.js';
 import { CustomError } from '../helpers/CustomError.js';
 import { Types } from 'mongoose';
 import { User } from '../models/User.js';
 export class ProjectService {
     projectRepository;
-    constructor() {
-        this.projectRepository = new ProjectRepository();
+    constructor(projectRepository) {
+        this.projectRepository = projectRepository;
     }
     mapMembers(members) {
         const bgColors = ['bg-indigo-500', 'bg-emerald-500', 'bg-violet-500', 'bg-rose-500', 'bg-amber-500', 'bg-sky-500', 'bg-blue-500'];
@@ -163,19 +162,52 @@ export class ProjectService {
     }
     async updateProject(projectId, userId, role, updateData) {
         // Verify access first
-        await this.getProjectById(projectId, userId, role);
+        const existingProject = await this.getProjectById(projectId, userId, role);
+        const managerId = updateData.managerId ? new Types.ObjectId(updateData.managerId) : undefined;
+        const teamLeadId = updateData.teamLeadId ? new Types.ObjectId(updateData.teamLeadId) : undefined;
+        const clientId = updateData.clientId ? new Types.ObjectId(updateData.clientId) : undefined;
+        let memberList = [];
         if (updateData.members && Array.isArray(updateData.members)) {
-            updateData.members = this.mapMembers(updateData.members);
+            memberList = this.mapMembers(updateData.members);
         }
-        if (updateData.managerId) {
-            updateData.managerId = new Types.ObjectId(updateData.managerId);
+        else {
+            memberList = existingProject.members || [];
         }
-        if (updateData.teamLeadId) {
-            updateData.teamLeadId = new Types.ObjectId(updateData.teamLeadId);
+        const userIdsToFetch = [];
+        if (managerId)
+            userIdsToFetch.push(managerId);
+        if (teamLeadId)
+            userIdsToFetch.push(teamLeadId);
+        if (clientId)
+            userIdsToFetch.push(clientId);
+        if (userIdsToFetch.length > 0) {
+            const fetchedUsers = await User.find({ _id: { $in: userIdsToFetch } });
+            const bgColors = ['bg-indigo-500', 'bg-emerald-500', 'bg-violet-500', 'bg-rose-500', 'bg-amber-500', 'bg-sky-500', 'bg-blue-500'];
+            for (const u of fetchedUsers) {
+                if (!memberList.some(m => m.userId.toString() === u._id.toString())) {
+                    const initials = u.name.split(' ').map((n) => n[0]).join('').toUpperCase().substring(0, 2) || 'U';
+                    let hash = 0;
+                    for (let i = 0; i < u.name.length; i++) {
+                        hash = u.name.charCodeAt(i) + ((hash << 5) - hash);
+                    }
+                    const index = Math.abs(hash) % bgColors.length;
+                    memberList.push({
+                        userId: u._id,
+                        name: u.name,
+                        initials,
+                        bg: bgColors[index],
+                        role: u.role
+                    });
+                }
+            }
         }
-        if (updateData.clientId) {
-            updateData.clientId = new Types.ObjectId(updateData.clientId);
-        }
+        updateData.members = memberList;
+        if (managerId)
+            updateData.managerId = managerId;
+        if (teamLeadId)
+            updateData.teamLeadId = teamLeadId;
+        if (clientId)
+            updateData.clientId = clientId;
         return this.projectRepository.update(projectId, updateData);
     }
     async deleteProject(projectId, userId) {

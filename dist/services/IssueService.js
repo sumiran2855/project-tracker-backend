@@ -1,13 +1,11 @@
-import { IssueRepository } from '../repositories/IssueRepository.js';
-import { ProjectRepository } from '../repositories/ProjectRepository.js';
 import { CustomError } from '../helpers/CustomError.js';
 import { Types } from 'mongoose';
 export class IssueService {
     issueRepository;
     projectRepository;
-    constructor() {
-        this.issueRepository = new IssueRepository();
-        this.projectRepository = new ProjectRepository();
+    constructor(issueRepository, projectRepository) {
+        this.issueRepository = issueRepository;
+        this.projectRepository = projectRepository;
     }
     async createIssue(title, description, status, priority, type, projectId, dueDate, assigneeUsers, relatedTaskId, relatedTaskTitle, attachments) {
         const project = await this.projectRepository.findById(projectId);

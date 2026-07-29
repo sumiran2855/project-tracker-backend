@@ -1,69 +1,13 @@
-import nodemailer from 'nodemailer';
 import { env } from '../config/env.js';
+import { IEmailProvider } from './providers/IEmailProvider.js';
 
 export class MailService {
-  private transporter?: nodemailer.Transporter;
-
-  constructor() {
-    if (!env.RESEND_API_KEY) {
-      this.transporter = nodemailer.createTransport({
-        host: env.SMTP_HOST,
-        port: env.SMTP_PORT,
-        secure: env.SMTP_PORT === 465, // true for 465, false for other ports like 587
-        auth: {
-          user: env.SMTP_USER,
-          pass: env.SMTP_PASS,
-        },
-      });
-    }
-  }
+  constructor(private readonly emailProvider: IEmailProvider) {}
 
   private async send(options: { to: string; subject: string; text: string; html: string }): Promise<void> {
-    if (env.RESEND_API_KEY) {
-      // Use onboarding@resend.dev as sender if domain is not verified on Resend,
-      // otherwise use the configured SMTP_FROM address.
-      const from = env.RESEND_SENDER_VERIFIED === 'true'
-        ? env.SMTP_FROM
-        : `Project Work Tracker <onboarding@resend.dev>`;
-
-      const payload = {
-        from,
-        to: options.to,
-        subject: options.subject,
-        text: options.text,
-        html: options.html,
-      };
-
-      console.log(`[Resend] Sending email to ${options.to} | from: ${from} | subject: "${options.subject}"`);
-
-      const response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${env.RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const responseBody = await response.text();
-      console.log(`[Resend] Response status: ${response.status} | body: ${responseBody}`);
-
-      if (!response.ok) {
-        throw new Error(`Failed to send email via Resend API: ${response.statusText} (${response.status}) - ${responseBody}`);
-      }
-    } else {
-      if (!this.transporter) {
-        throw new Error('Mail transporter not initialized and RESEND_API_KEY is missing');
-      }
-      await this.transporter.sendMail({
-        from: `"${env.SMTP_FROM.split('@')[0]}" <${env.SMTP_FROM}>`,
-        to: options.to,
-        subject: options.subject,
-        text: options.text,
-        html: options.html,
-      });
-    }
+    await this.emailProvider.send(options);
   }
+
 
   /**
    * Sends a password reset email to the user.

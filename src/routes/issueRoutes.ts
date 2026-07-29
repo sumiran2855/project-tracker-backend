@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { IssueController } from '../controllers/IssueController.js';
+import { issueController } from '../config/container.js';
 import { validate } from '../middleware/validate.js';
 import { IssueCreateSchema, IssueUpdateSchema } from '../helpers/validation.js';
 import { requireAuth, checkPermission } from '../middleware/auth.js';
@@ -8,7 +8,7 @@ import path from 'path';
 import fs from 'fs';
 
 const router = Router();
-const controller = new IssueController();
+const controller = issueController;
 
 // Configure multer storage and validation
 const upload = multer({
