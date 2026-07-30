@@ -1,4 +1,4 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document, Types } from 'mongoose';
 
 export interface ICollaborator {
   name: string;
@@ -47,6 +47,7 @@ export interface IUser extends Document {
   notificationPrefs?: INotificationPrefs;
   workspacePrefs?: IWorkspacePrefs;
   refreshTokens: IRefreshToken[];
+  manager?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -161,6 +162,11 @@ const UserSchema = new Schema<IUser>(
         }
       ],
       default: []
+    },
+    manager: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
     },
   },
   {

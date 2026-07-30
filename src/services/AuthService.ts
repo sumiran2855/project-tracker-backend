@@ -254,11 +254,20 @@ export class AuthService {
       const userRole = currentUser.role?.toLowerCase();
       const userIdStr = currentUser.userId;
 
-      if (userRole === 'admin' || userRole === 'manager' || userRole === 'team lead') {
-        // Admin, Manager, and Team Lead see: Managers, Team Leads, Employees, Clients
+      if (userRole === 'admin' || userRole === 'team lead') {
+        // Admin and Team Lead see: Managers, Team Leads, Employees, Clients
         filteredUsers = users.filter(u => {
           const r = u.role?.toLowerCase();
           return r === 'manager' || r === 'team lead' || r === 'employee' || r === 'client';
+        });
+      } else if (userRole === 'manager') {
+        // Manager sees: Employees & Team Leads assigned to them, Clients, and themselves
+        filteredUsers = users.filter(u => {
+          const r = u.role?.toLowerCase();
+          if (r === 'client') return true;
+          if (u._id.toString() === userIdStr) return true;
+          const isAssigned = u.manager && u.manager.toString() === userIdStr;
+          return isAssigned && (r === 'employee' || r === 'team lead');
         });
       } else if (userRole === 'employee') {
         // Employee sees: only Employees
@@ -311,6 +320,8 @@ export class AuthService {
         role: u.role,
         initials: name.split(' ').map((n: string) => n[0]).join('').toUpperCase().substring(0, 2) || 'U',
         bg: bgColors[index],
+        manager: u.manager ? u.manager.toString() : null,
+        skills: u.skills || [],
       };
     });
   }

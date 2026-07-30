@@ -11,11 +11,13 @@ import { AuthService } from '../services/AuthService.js';
 import { ProjectService } from '../services/ProjectService.js';
 import { TaskService } from '../services/TaskService.js';
 import { IssueService } from '../services/IssueService.js';
+import { ManagerService } from '../services/ManagerService.js';
 
 import { AuthController } from '../controllers/AuthController.js';
 import { ProjectController } from '../controllers/ProjectController.js';
 import { TaskController } from '../controllers/TaskController.js';
 import { IssueController } from '../controllers/IssueController.js';
+import { ManagerController } from '../controllers/ManagerController.js';
 
 // 1. Instantiate the dynamic Email Provider Strategy
 const emailProvider = env.RESEND_API_KEY
@@ -49,9 +51,11 @@ export const authService = new AuthService(userRepository, mailService);
 export const projectService = new ProjectService(projectRepository);
 export const taskService = new TaskService(taskRepository, projectRepository);
 export const issueService = new IssueService(issueRepository, projectRepository);
+export const managerService = new ManagerService(userRepository, projectRepository);
 
 // 4. Instantiate Controllers
 export const authController = new AuthController(authService);
 export const projectController = new ProjectController(projectService);
 export const taskController = new TaskController(taskService, projectService);
 export const issueController = new IssueController(issueService, projectService);
+export const managerController = new ManagerController(managerService);

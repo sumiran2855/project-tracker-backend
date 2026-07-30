@@ -25,7 +25,7 @@ export class ProjectService {
     });
   }
 
-  async createProject(projectData: any, owner: { id: string; name: string }): Promise<any> {
+  async createProject(projectData: any, owner: { id: string; name: string; role?: string }): Promise<any> {
     const ownerId = new Types.ObjectId(owner.id);
     
     // Map members list
@@ -34,12 +34,38 @@ export class ProjectService {
       memberList = this.mapMembers(projectData.members);
     }
 
-    // Fetch users for manager, team lead, and client if provided
-    const userIdsToFetch: Types.ObjectId[] = [];
-    const managerId = projectData.managerId ? new Types.ObjectId(projectData.managerId) : undefined;
+    const isCreatorManager = owner.role?.toLowerCase() === 'manager';
+    const managerId = isCreatorManager 
+      ? ownerId 
+      : (projectData.managerId ? new Types.ObjectId(projectData.managerId) : undefined);
     const teamLeadId = projectData.teamLeadId ? new Types.ObjectId(projectData.teamLeadId) : undefined;
     const clientId = projectData.clientId ? new Types.ObjectId(projectData.clientId) : undefined;
 
+    // Enforce Manager Team Boundaries
+    if (isCreatorManager) {
+      if (teamLeadId) {
+        const tlUser = await User.findById(teamLeadId);
+        if (!tlUser || tlUser.role !== 'Team Lead' || tlUser.manager?.toString() !== owner.id) {
+          throw new CustomError(400, 'The selected Team Lead is not assigned to you.');
+        }
+      }
+
+      if (memberList.length > 0) {
+        const memberUserIds = memberList.map((m: any) => new Types.ObjectId(m.userId));
+        const dbMembers = await User.find({ _id: { $in: memberUserIds } });
+        for (const dbMember of dbMembers) {
+          const role = dbMember.role?.toLowerCase();
+          if (role === 'employee' || role === 'team lead') {
+            if (dbMember.manager?.toString() !== owner.id) {
+              throw new CustomError(400, `Member "${dbMember.name}" is not assigned to your team.`);
+            }
+          }
+        }
+      }
+    }
+
+    // Fetch users for manager, team lead, and client if provided
+    const userIdsToFetch: Types.ObjectId[] = [];
     if (managerId) userIdsToFetch.push(managerId);
     if (teamLeadId) userIdsToFetch.push(teamLeadId);
     if (clientId) userIdsToFetch.push(clientId);
@@ -174,7 +200,10 @@ export class ProjectService {
     // Verify access first
     const existingProject = await this.getProjectById(projectId, userId, role);
 
-    const managerId = updateData.managerId ? new Types.ObjectId(updateData.managerId) : undefined;
+    const isManager = role?.toLowerCase() === 'manager';
+    const managerId = isManager
+      ? new Types.ObjectId(userId)
+      : (updateData.managerId ? new Types.ObjectId(updateData.managerId) : undefined);
     const teamLeadId = updateData.teamLeadId ? new Types.ObjectId(updateData.teamLeadId) : undefined;
     const clientId = updateData.clientId ? new Types.ObjectId(updateData.clientId) : undefined;
 
@@ -183,6 +212,29 @@ export class ProjectService {
       memberList = this.mapMembers(updateData.members);
     } else {
       memberList = existingProject.members || [];
+    }
+
+    // Enforce Manager Team Boundaries on Update
+    if (isManager) {
+      if (teamLeadId) {
+        const tlUser = await User.findById(teamLeadId);
+        if (!tlUser || tlUser.role !== 'Team Lead' || tlUser.manager?.toString() !== userId) {
+          throw new CustomError(400, 'The selected Team Lead is not assigned to you.');
+        }
+      }
+
+      if (memberList.length > 0) {
+        const memberUserIds = memberList.map((m: any) => new Types.ObjectId(m.userId));
+        const dbMembers = await User.find({ _id: { $in: memberUserIds } });
+        for (const dbMember of dbMembers) {
+          const mRole = dbMember.role?.toLowerCase();
+          if (mRole === 'employee' || mRole === 'team lead') {
+            if (dbMember.manager?.toString() !== userId) {
+              throw new CustomError(400, `Member "${dbMember.name}" is not assigned to your team.`);
+            }
+          }
+        }
+      }
     }
 
     const userIdsToFetch: Types.ObjectId[] = [];
