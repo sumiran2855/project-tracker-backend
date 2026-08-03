@@ -7,38 +7,66 @@ import { Project } from '../models/Project.js';
 export class AuthService {
     userRepository;
     mailService;
-    constructor(userRepository, mailService) {
+    clientInviteRepository;
+    constructor(userRepository, mailService, clientInviteRepository) {
         this.userRepository = userRepository;
         this.mailService = mailService;
+        this.clientInviteRepository = clientInviteRepository;
     }
-    async register(name, email, password) {
+    async register(name, email, password, inviteToken) {
         const existing = await this.userRepository.findByEmail(email);
         if (existing) {
             throw new CustomError(400, 'User with this email already exists');
         }
+        let role = 'Employee';
+        let invite = null;
+        if (inviteToken) {
+            invite = await this.clientInviteRepository.findValidToken(inviteToken);
+            if (!invite) {
+                throw new CustomError(400, 'This invitation link is invalid, expired, or has already been used.');
+            }
+            role = 'Client';
+        }
         const passwordHash = await bcrypt.hash(password, 10);
-        // Seed database with first user as Admin if no users exist, otherwise default to Employee
+        // Seed database with first user as Admin if no users exist
         const allUsers = await this.userRepository.find();
-        const role = allUsers.length === 0 ? 'Admin' : 'Employee';
+        if (allUsers.length === 0) {
+            role = 'Admin';
+        }
+        // Generate 6-digit verification code
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const verificationCodeHash = await bcrypt.hash(otp, 10);
         const user = await this.userRepository.create({
             name,
             email,
             passwordHash,
             role,
             refreshTokens: [],
+            isVerified: false,
+            verificationCodeHash,
+            verificationCodeExpiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
+            lastVerificationCodeSentAt: new Date(),
         });
-        const accessToken = generateAccessToken({
-            userId: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
+        if (invite) {
+            invite.isUsed = true;
+            invite.usedByEmail = email;
+            await invite.save();
+        }
+        console.log(`[EMAIL VERIFICATION CODE FOR ${email}]: ${otp}`);
+        await this.mailService.sendVerificationCodeEmail(email, otp, name);
+        return { user };
+    }
+    async generateClientInvite(adminUserId) {
+        const crypto = await import('crypto');
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hour expiration
+        await this.clientInviteRepository.create({
+            token,
+            isUsed: false,
+            expiresAt,
+            createdBy: adminUserId,
         });
-        const refreshToken = generateRefreshToken({ userId: user.id });
-        // Store refresh token
-        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-        user.refreshTokens.push({ token: refreshToken, expiresAt });
-        await user.save();
-        return { user, accessToken, refreshToken };
+        return token;
     }
     async login(email, password) {
         const user = await this.userRepository.findByEmail(email);
@@ -48,6 +76,9 @@ export class AuthService {
         const isValid = await bcrypt.compare(password, user.passwordHash);
         if (!isValid) {
             throw new CustomError(401, 'Invalid email or password');
+        }
+        if (user.isVerified === false) {
+            throw new CustomError(403, 'Your email address has not been verified. Please verify your email before logging in.');
         }
         const accessToken = generateAccessToken({
             userId: user.id,
@@ -65,6 +96,68 @@ export class AuthService {
         user.lastLogin = new Date();
         await user.save();
         return { user, accessToken, refreshToken };
+    }
+    async verifyEmail(email, code) {
+        const user = await this.userRepository.findByEmail(email);
+        if (!user) {
+            throw new CustomError(404, 'User not found');
+        }
+        if (user.isVerified === true) {
+            return; // Already verified
+        }
+        if (!user.verificationCodeHash || !user.verificationCodeExpiresAt) {
+            throw new CustomError(400, 'No verification code was requested for this email.');
+        }
+        if (new Date() > new Date(user.verificationCodeExpiresAt)) {
+            throw new CustomError(400, 'Verification code has expired. Please request a new code.');
+        }
+        const retries = user.verificationRetries || 0;
+        if (retries >= 5) {
+            // Invalidate the code
+            user.verificationCodeHash = undefined;
+            user.verificationCodeExpiresAt = undefined;
+            user.verificationRetries = 0;
+            await user.save();
+            throw new CustomError(400, 'Too many failed verification attempts. This code has been invalidated. Please request a new one.');
+        }
+        const isValid = await bcrypt.compare(code, user.verificationCodeHash);
+        if (!isValid) {
+            user.verificationRetries = retries + 1;
+            await user.save();
+            throw new CustomError(400, `Invalid verification code. ${5 - (retries + 1)} attempts remaining.`);
+        }
+        user.isVerified = true;
+        user.verificationCodeHash = undefined;
+        user.verificationCodeExpiresAt = undefined;
+        user.verificationRetries = 0;
+        await user.save();
+    }
+    async resendVerificationCode(email) {
+        const user = await this.userRepository.findByEmail(email);
+        if (!user) {
+            throw new CustomError(404, 'User not found');
+        }
+        if (user.isVerified === true) {
+            throw new CustomError(400, 'Email is already verified');
+        }
+        // Cooldown check: 60 seconds
+        if (user.lastVerificationCodeSentAt) {
+            const msSinceLastSend = Date.now() - new Date(user.lastVerificationCodeSentAt).getTime();
+            if (msSinceLastSend < 60000) {
+                const secondsLeft = Math.ceil((60000 - msSinceLastSend) / 1000);
+                throw new CustomError(429, `Please wait ${secondsLeft} seconds before requesting a new code.`);
+            }
+        }
+        // Generate new OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const verificationCodeHash = await bcrypt.hash(otp, 10);
+        user.verificationCodeHash = verificationCodeHash;
+        user.verificationCodeExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+        user.verificationRetries = 0;
+        user.lastVerificationCodeSentAt = new Date();
+        await user.save();
+        console.log(`[EMAIL VERIFICATION CODE FOR ${email}]: ${otp}`);
+        await this.mailService.sendVerificationCodeEmail(email, otp, user.name);
     }
     async refresh(refreshToken) {
         if (!refreshToken) {
@@ -205,11 +298,23 @@ export class AuthService {
         if (currentUser) {
             const userRole = currentUser.role?.toLowerCase();
             const userIdStr = currentUser.userId;
-            if (userRole === 'admin' || userRole === 'manager' || userRole === 'team lead') {
-                // Admin, Manager, and Team Lead see: Managers, Team Leads, Employees, Clients
+            if (userRole === 'admin' || userRole === 'team lead') {
+                // Admin and Team Lead see: Managers, Team Leads, Employees, Clients
                 filteredUsers = users.filter(u => {
                     const r = u.role?.toLowerCase();
                     return r === 'manager' || r === 'team lead' || r === 'employee' || r === 'client';
+                });
+            }
+            else if (userRole === 'manager') {
+                // Manager sees: Employees & Team Leads assigned to them, Clients, and themselves
+                filteredUsers = users.filter(u => {
+                    const r = u.role?.toLowerCase();
+                    if (r === 'client')
+                        return true;
+                    if (u._id.toString() === userIdStr)
+                        return true;
+                    const isAssigned = u.manager && u.manager.toString() === userIdStr;
+                    return isAssigned && (r === 'employee' || r === 'team lead');
                 });
             }
             else if (userRole === 'employee') {
@@ -266,6 +371,8 @@ export class AuthService {
                 role: u.role,
                 initials: name.split(' ').map((n) => n[0]).join('').toUpperCase().substring(0, 2) || 'U',
                 bg: bgColors[index],
+                manager: u.manager ? u.manager.toString() : null,
+                skills: u.skills || [],
             };
         });
     }

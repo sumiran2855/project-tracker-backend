@@ -1,3 +1,4 @@
+import { CustomError } from '../helpers/CustomError.js';
 export class AuthController {
     authService;
     constructor(authService) {
@@ -5,8 +6,8 @@ export class AuthController {
     }
     register = async (req, res, next) => {
         try {
-            const { name, email, password } = req.body;
-            const data = await this.authService.register(name, email, password);
+            const { name, email, password, inviteToken } = req.body;
+            const data = await this.authService.register(name, email, password, inviteToken);
             res.status(201).json({
                 success: true,
                 data,
@@ -198,6 +199,48 @@ export class AuthController {
             res.status(200).json({
                 success: true,
                 message: 'Logged out successfully',
+            });
+        }
+        catch (error) {
+            next(error);
+        }
+    };
+    verifyEmail = async (req, res, next) => {
+        try {
+            const { email, code } = req.body;
+            await this.authService.verifyEmail(email, code);
+            res.status(200).json({
+                success: true,
+                message: 'Email verified successfully',
+            });
+        }
+        catch (error) {
+            next(error);
+        }
+    };
+    resendVerificationCode = async (req, res, next) => {
+        try {
+            const { email } = req.body;
+            await this.authService.resendVerificationCode(email);
+            res.status(200).json({
+                success: true,
+                message: 'Verification code resent successfully',
+            });
+        }
+        catch (error) {
+            next(error);
+        }
+    };
+    generateClientInvite = async (req, res, next) => {
+        try {
+            const adminUserId = req.user?.userId;
+            if (!adminUserId) {
+                throw new CustomError(401, 'Unauthorized');
+            }
+            const token = await this.authService.generateClientInvite(adminUserId);
+            res.status(201).json({
+                success: true,
+                token,
             });
         }
         catch (error) {

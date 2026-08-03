@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authController } from '../config/container.js';
 import { validate } from '../middleware/validate.js';
-import { RegisterSchema, LoginSchema, UpdateRoleSchema, ForgotPasswordSchema, ResetPasswordSchema } from '../helpers/validation.js';
+import { RegisterSchema, LoginSchema, UpdateRoleSchema, ForgotPasswordSchema, ResetPasswordSchema, VerifyEmailSchema, ResendVerificationSchema } from '../helpers/validation.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { rateLimiter } from '../middleware/rateLimiter.js';
 
@@ -17,11 +17,14 @@ const authRateLimit = rateLimiter({
 
 router.post('/register', authRateLimit, validate(RegisterSchema), controller.register);
 router.post('/login', authRateLimit, validate(LoginSchema), controller.login);
+router.post('/verify-email', authRateLimit, validate(VerifyEmailSchema), controller.verifyEmail);
+router.post('/resend-verification', authRateLimit, validate(ResendVerificationSchema), controller.resendVerificationCode);
 router.post('/refresh', controller.refresh);
 router.post('/logout', requireAuth, controller.logout);
 router.get('/me', requireAuth, controller.getCurrentUser);
 router.get('/employees', requireAuth, controller.getEmployees);
 router.put('/role', requireAuth, requireRole(['Admin']), validate(UpdateRoleSchema), controller.updateRole);
+router.post('/client-invite', requireAuth, requireRole(['Admin']), controller.generateClientInvite);
 router.put('/profile', requireAuth, controller.updateProfile);
 router.post('/collab/invite', requireAuth, controller.inviteCollaborator);
 router.get('/collab/accept', controller.acceptCollaboration);

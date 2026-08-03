@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import { UserRepository } from '../repositories/UserRepository.js';
+import { ClientInviteRepository } from '../repositories/ClientInviteRepository.js';
 import { CustomError } from '../helpers/CustomError.js';
 import { generateAccessToken, generateRefreshToken } from '../helpers/jwt.js';
 import { MailService } from './MailService.js';
@@ -10,20 +11,38 @@ import { Project } from '../models/Project.js';
 export class AuthService {
   constructor(
     private readonly userRepository: UserRepository,
-    private readonly mailService: MailService
-  ) {}
+    private readonly mailService: MailService,
+    private readonly clientInviteRepository: ClientInviteRepository
+  ) { }
 
-  async register(name: string, email: string, password: string): Promise<{ user: any; accessToken: string; refreshToken: string }> {
+  async register(name: string, email: string, password: string, inviteToken?: string): Promise<{ user: any }> {
     const existing = await this.userRepository.findByEmail(email);
     if (existing) {
       throw new CustomError(400, 'User with this email already exists');
     }
 
+    let role = 'Employee';
+    let invite = null;
+
+    if (inviteToken) {
+      invite = await this.clientInviteRepository.findValidToken(inviteToken);
+      if (!invite) {
+        throw new CustomError(400, 'This invitation link is invalid, expired, or has already been used.');
+      }
+      role = 'Client';
+    }
+
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Seed database with first user as Admin if no users exist, otherwise default to Employee
+    // Seed database with first user as Admin if no users exist
     const allUsers = await this.userRepository.find();
-    const role = allUsers.length === 0 ? 'Admin' : 'Employee';
+    if (allUsers.length === 0) {
+      role = 'Admin';
+    }
+
+    // Generate 6-digit verification code
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationCodeHash = await bcrypt.hash(otp, 10);
 
     const user = await this.userRepository.create({
       name,
@@ -31,23 +50,38 @@ export class AuthService {
       passwordHash,
       role,
       refreshTokens: [],
+      isVerified: false,
+      verificationCodeHash,
+      verificationCodeExpiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
+      lastVerificationCodeSentAt: new Date(),
     });
 
-    const accessToken = generateAccessToken({
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
+    if (invite) {
+      invite.isUsed = true;
+      invite.usedByEmail = email;
+      await invite.save();
+    }
+
+    console.log(`[EMAIL VERIFICATION CODE FOR ${email}]: ${otp}`);
+
+    await this.mailService.sendVerificationCodeEmail(email, otp, name);
+
+    return { user };
+  }
+
+  async generateClientInvite(adminUserId: string): Promise<string> {
+    const crypto = await import('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hour expiration
+
+    await this.clientInviteRepository.create({
+      token,
+      isUsed: false,
+      expiresAt,
+      createdBy: adminUserId as any,
     });
 
-    const refreshToken = generateRefreshToken({ userId: user.id });
-
-    // Store refresh token
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-    user.refreshTokens.push({ token: refreshToken, expiresAt });
-    await user.save();
-
-    return { user, accessToken, refreshToken };
+    return token;
   }
 
   async login(email: string, password: string): Promise<{ user: any; accessToken: string; refreshToken: string }> {
@@ -59,6 +93,10 @@ export class AuthService {
     const isValid = await bcrypt.compare(password, user.passwordHash);
     if (!isValid) {
       throw new CustomError(401, 'Invalid email or password');
+    }
+
+    if (user.isVerified === false) {
+      throw new CustomError(403, 'Your email address has not been verified. Please verify your email before logging in.');
     }
 
     const accessToken = generateAccessToken({
@@ -81,6 +119,82 @@ export class AuthService {
     await user.save();
 
     return { user, accessToken, refreshToken };
+  }
+
+  async verifyEmail(email: string, code: string): Promise<void> {
+    const user = await this.userRepository.findByEmail(email);
+    if (!user) {
+      throw new CustomError(404, 'User not found');
+    }
+
+    if (user.isVerified === true) {
+      return; // Already verified
+    }
+
+    if (!user.verificationCodeHash || !user.verificationCodeExpiresAt) {
+      throw new CustomError(400, 'No verification code was requested for this email.');
+    }
+
+    if (new Date() > new Date(user.verificationCodeExpiresAt)) {
+      throw new CustomError(400, 'Verification code has expired. Please request a new code.');
+    }
+
+    const retries = user.verificationRetries || 0;
+    if (retries >= 5) {
+      // Invalidate the code
+      user.verificationCodeHash = undefined;
+      user.verificationCodeExpiresAt = undefined;
+      user.verificationRetries = 0;
+      await user.save();
+      throw new CustomError(400, 'Too many failed verification attempts. This code has been invalidated. Please request a new one.');
+    }
+
+    const isValid = await bcrypt.compare(code, user.verificationCodeHash);
+    if (!isValid) {
+      user.verificationRetries = retries + 1;
+      await user.save();
+      throw new CustomError(400, `Invalid verification code. ${5 - (retries + 1)} attempts remaining.`);
+    }
+
+    user.isVerified = true;
+    user.verificationCodeHash = undefined;
+    user.verificationCodeExpiresAt = undefined;
+    user.verificationRetries = 0;
+    await user.save();
+  }
+
+  async resendVerificationCode(email: string): Promise<void> {
+    const user = await this.userRepository.findByEmail(email);
+    if (!user) {
+      throw new CustomError(404, 'User not found');
+    }
+
+    if (user.isVerified === true) {
+      throw new CustomError(400, 'Email is already verified');
+    }
+
+    // Cooldown check: 60 seconds
+    if (user.lastVerificationCodeSentAt) {
+      const msSinceLastSend = Date.now() - new Date(user.lastVerificationCodeSentAt).getTime();
+      if (msSinceLastSend < 60000) {
+        const secondsLeft = Math.ceil((60000 - msSinceLastSend) / 1000);
+        throw new CustomError(429, `Please wait ${secondsLeft} seconds before requesting a new code.`);
+      }
+    }
+
+    // Generate new OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationCodeHash = await bcrypt.hash(otp, 10);
+
+    user.verificationCodeHash = verificationCodeHash;
+    user.verificationCodeExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+    user.verificationRetries = 0;
+    user.lastVerificationCodeSentAt = new Date();
+    await user.save();
+
+    console.log(`[EMAIL VERIFICATION CODE FOR ${email}]: ${otp}`);
+
+    await this.mailService.sendVerificationCodeEmail(email, otp, user.name);
   }
 
   async refresh(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {

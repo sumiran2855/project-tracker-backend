@@ -17,6 +17,7 @@ export const ROLE_PERMISSIONS = {
         'settings:view',
         'issue:view',
         'issue:delete',
+        'manager-assignments:manage',
     ],
     Manager: [
         'project:create',
@@ -34,6 +35,7 @@ export const ROLE_PERMISSIONS = {
         'settings:view',
         'issue:view',
         'issue:delete',
+        'team:view',
     ],
     'Team Lead': [
         'project:create',

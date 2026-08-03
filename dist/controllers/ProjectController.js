@@ -9,6 +9,7 @@ export class ProjectController {
             const project = await this.projectService.createProject(req.body, {
                 id: user.userId,
                 name: user.name,
+                role: user.role,
             });
             res.status(201).json({
                 success: true,

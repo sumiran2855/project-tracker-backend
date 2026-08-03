@@ -4,6 +4,7 @@ export const RegisterSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
+  inviteToken: z.string().optional(),
 });
 
 export const LoginSchema = z.object({
@@ -193,5 +194,14 @@ export const ForgotPasswordSchema = z.object({
 export const ResetPasswordSchema = z.object({
   token: z.string().min(1, 'Token is required'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
+export const VerifyEmailSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+  code: z.string().min(1, 'Verification code is required'),
+});
+
+export const ResendVerificationSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
 });
 

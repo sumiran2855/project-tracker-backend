@@ -35,6 +35,11 @@ export interface IUser extends Document {
   passwordHash: string;
   name: string;
   role: string;
+  isVerified?: boolean;
+  verificationCodeHash?: string;
+  verificationCodeExpiresAt?: Date;
+  verificationRetries?: number;
+  lastVerificationCodeSentAt?: Date;
   resetToken?: string;
   resetTokenExpires?: Date;
   readNotifications?: string[];
@@ -76,6 +81,26 @@ const UserSchema = new Schema<IUser>(
       required: true,
       enum: ['Employee', 'Admin', 'Manager', 'Team Lead', 'Client'],
       default: 'Employee',
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationCodeHash: {
+      type: String,
+      default: null,
+    },
+    verificationCodeExpiresAt: {
+      type: Date,
+      default: null,
+    },
+    verificationRetries: {
+      type: Number,
+      default: 0,
+    },
+    lastVerificationCodeSentAt: {
+      type: Date,
+      default: null,
     },
     resetToken: {
       type: String,

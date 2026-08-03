@@ -1,13 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/AuthService.js';
+import { CustomError } from '../helpers/CustomError.js';
 
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { name, email, password } = req.body;
-      const data = await this.authService.register(name, email, password);
+      const { name, email, password, inviteToken } = req.body;
+      const data = await this.authService.register(name, email, password, inviteToken);
       res.status(201).json({
         success: true,
         data,
@@ -89,7 +90,7 @@ export class AuthController {
     try {
       const { email } = req.body;
       const token = await this.authService.forgotPassword(email);
-      
+
       console.log(`[PASSWORD RESET LINK]: https://project-work-tracker.vercel.app/reset-password?token=${token}`);
 
       res.status(200).json({
@@ -158,7 +159,7 @@ export class AuthController {
     try {
       const { inviterId, inviteeId } = req.query;
       await this.authService.acceptCollaboration(inviterId as string, inviteeId as string);
-      
+
       // Redirect to the frontend page
       const nextPublicUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
       res.redirect(`${nextPublicUrl}/profile?collabAccepted=true`);
@@ -202,6 +203,49 @@ export class AuthController {
       res.status(200).json({
         success: true,
         message: 'Logged out successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  verifyEmail = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { email, code } = req.body;
+      await this.authService.verifyEmail(email, code);
+      res.status(200).json({
+        success: true,
+        message: 'Email verified successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  resendVerificationCode = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { email } = req.body;
+      await this.authService.resendVerificationCode(email);
+      res.status(200).json({
+        success: true,
+        message: 'Verification code resent successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  generateClientInvite = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const adminUserId = (req as any).user?.userId;
+      if (!adminUserId) {
+        throw new CustomError(401, 'Unauthorized');
+      }
+
+      const token = await this.authService.generateClientInvite(adminUserId);
+      res.status(201).json({
+        success: true,
+        token,
       });
     } catch (error) {
       next(error);

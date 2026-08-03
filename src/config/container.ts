@@ -3,6 +3,7 @@ import { UserRepository } from '../repositories/UserRepository.js';
 import { ProjectRepository } from '../repositories/ProjectRepository.js';
 import { TaskRepository } from '../repositories/TaskRepository.js';
 import { IssueRepository } from '../repositories/IssueRepository.js';
+import { ClientInviteRepository } from '../repositories/ClientInviteRepository.js';
 
 import { ResendEmailProvider } from '../services/providers/ResendEmailProvider.js';
 import { SmtpEmailProvider } from '../services/providers/SmtpEmailProvider.js';
@@ -44,10 +45,11 @@ export const userRepository = new UserRepository();
 export const projectRepository = new ProjectRepository();
 export const taskRepository = new TaskRepository();
 export const issueRepository = new IssueRepository();
+export const clientInviteRepository = new ClientInviteRepository();
 
 // 3. Instantiate Services
 export const mailService = new MailService(emailProvider);
-export const authService = new AuthService(userRepository, mailService);
+export const authService = new AuthService(userRepository, mailService, clientInviteRepository);
 export const projectService = new ProjectService(projectRepository);
 export const taskService = new TaskService(taskRepository, projectRepository);
 export const issueService = new IssueService(issueRepository, projectRepository);

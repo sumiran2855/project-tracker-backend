@@ -22,6 +22,26 @@ const UserSchema = new Schema({
         enum: ['Employee', 'Admin', 'Manager', 'Team Lead', 'Client'],
         default: 'Employee',
     },
+    isVerified: {
+        type: Boolean,
+        default: false,
+    },
+    verificationCodeHash: {
+        type: String,
+        default: null,
+    },
+    verificationCodeExpiresAt: {
+        type: Date,
+        default: null,
+    },
+    verificationRetries: {
+        type: Number,
+        default: 0,
+    },
+    lastVerificationCodeSentAt: {
+        type: Date,
+        default: null,
+    },
     resetToken: {
         type: String,
         unique: true,
@@ -107,6 +127,11 @@ const UserSchema = new Schema({
             }
         ],
         default: []
+    },
+    manager: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        default: null,
     },
 }, {
     timestamps: true,

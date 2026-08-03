@@ -296,4 +296,130 @@ Project Work Tracker Team
       html: htmlContent,
     });
   }
+
+  async sendVerificationCodeEmail(to: string, code: string, name: string): Promise<void> {
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Verify Your Email</title>
+        <style>
+          body {
+            font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+          }
+          .container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 32px;
+            background-color: #111827;
+            background: linear-gradient(135deg, #111827 0%, #0f172a 100%);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 32px;
+          }
+          .logo {
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: #3b82f6;
+            letter-spacing: -0.5px;
+          }
+          .content {
+            line-height: 1.6;
+            color: #d1d5db;
+          }
+          h1 {
+            font-size: 22px;
+            color: #ffffff;
+            margin-top: 0;
+            font-weight: 700;
+            text-align: center;
+          }
+          p {
+            margin: 16px 0;
+            font-size: 15px;
+            text-align: center;
+          }
+          .code-container {
+            text-align: center;
+            margin: 32px 0;
+            padding: 16px;
+            background-color: rgba(59, 130, 246, 0.1);
+            border: 1px dashed rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+          }
+          .code {
+            font-family: monospace;
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: 6px;
+            color: #3b82f6;
+          }
+          .footer {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 13px;
+            color: #6b7280;
+            text-align: center;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <span class="logo">Project Work Tracker</span>
+          </div>
+          <div class="content">
+            <h1>Email Verification</h1>
+            <p>Hello ${name},</p>
+            <p>Thank you for registering. Please use the following verification code to verify your email address. This code is valid for 15 minutes.</p>
+            
+            <div class="code-container">
+              <span class="code">${code}</span>
+            </div>
+            
+            <p>If you did not request this verification, please ignore this email.</p>
+          </div>
+          <div class="footer">
+            &copy; ${new Date().getFullYear()} Project Work Tracker. All rights reserved.
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const textContent = `
+Hello ${name},
+
+Thank you for registering. Please use the following verification code to verify your email address.
+
+Verification Code: ${code}
+
+This code is valid for 15 minutes. If you did not request this verification, please ignore this email.
+
+Best regards,
+Project Work Tracker Team
+    `;
+
+    await this.send({
+      to,
+      subject: 'Verify Your Email - Project Work Tracker',
+      text: textContent,
+      html: htmlContent,
+    });
+  }
 }
