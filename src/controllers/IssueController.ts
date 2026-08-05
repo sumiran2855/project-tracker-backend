@@ -13,7 +13,7 @@ export class IssueController {
 
   create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { title, description, status, priority, type, projectId, dueDate, assignees, relatedTaskId, relatedTaskTitle, attachments } = req.body;
+      const { title, description, status, priority, type, projectId, dueDate, assignees, relatedTaskId, relatedTaskTitle, attachments, comments } = req.body;
       const issue = await this.issueService.createIssue(
         title,
         description,
@@ -25,7 +25,8 @@ export class IssueController {
         assignees,
         relatedTaskId,
         relatedTaskTitle,
-        attachments
+        attachments,
+        comments
       );
 
       res.status(201).json({

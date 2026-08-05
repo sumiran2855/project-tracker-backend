@@ -20,7 +20,8 @@ export class IssueService {
     assigneeUsers: { id: string; name: string }[],
     relatedTaskId?: string,
     relatedTaskTitle?: string,
-    attachments?: string[]
+    attachments?: string[],
+    comments: any[] = []
   ): Promise<any> {
     const project = await this.projectRepository.findById(projectId);
     if (!project) {
@@ -47,6 +48,8 @@ export class IssueService {
       relatedTaskId: relatedTaskId ? new Types.ObjectId(relatedTaskId) : undefined,
       relatedTaskTitle,
       attachments: attachments || [],
+      comments: comments || [],
+      commentsCount: comments ? comments.length : 0,
     });
 
     // Increment commentsCount or other properties on project if required
@@ -82,6 +85,10 @@ export class IssueService {
         initials: u.initials || u.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().substring(0, 2),
         bg: u.bg || 'bg-indigo-500',
       }));
+    }
+
+    if (updateData.comments) {
+      updateData.commentsCount = updateData.comments.length;
     }
 
     // Auto-record timestamped workLog if newWorkLog delta is provided

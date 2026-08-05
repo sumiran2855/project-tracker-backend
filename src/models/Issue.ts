@@ -7,6 +7,14 @@ export interface IIssueAssignee {
   bg: string;
 }
 
+export interface IComment {
+  id: string;
+  author: string;
+  initials: string;
+  text: string;
+  time: string;
+}
+
 export interface IWorkLog {
   id?: string;
   userId?: Types.ObjectId;
@@ -26,6 +34,7 @@ export interface IIssue extends Document {
   dueDate: string;
   assignees: IIssueAssignee[];
   commentsCount: number;
+  comments: IComment[];
   actualHours?: number;
   workLogs?: IWorkLog[];
   relatedTaskId?: Types.ObjectId;
@@ -89,6 +98,15 @@ const IssueSchema = new Schema<IIssue>(
       type: Number,
       default: 0,
     },
+    comments: [
+      {
+        id: { type: String, required: true },
+        author: { type: String, required: true },
+        initials: { type: String, required: true },
+        text: { type: String, required: true },
+        time: { type: String, required: true },
+      },
+    ],
     actualHours: {
       type: Number,
       default: 0,
